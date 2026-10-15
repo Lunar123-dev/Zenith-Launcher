@@ -1,0 +1,6 @@
+{
+  "name": "Zenith Launcher",
+  "description": "Minimalist, ultra-fast customizable Android launcher with hidden apps vault, disguise camouflage, smart widgets and AI habit categorization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
