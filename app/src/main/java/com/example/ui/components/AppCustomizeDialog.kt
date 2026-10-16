@@ -61,13 +61,14 @@ fun AppCustomizeDialog(
     app: AppInfo,
     accentColor: Color,
     onDismiss: () -> Unit,
-    onSave: (newLabel: String, camouflage: CamouflageType) -> Unit,
+    onSave: (newLabel: String, camouflage: CamouflageType, isPinned: Boolean) -> Unit,
     onTogglePin: () -> Unit,
     onToggleHidden: (Boolean) -> Unit,
     onOpenAppInfo: () -> Unit
 ) {
     var editedLabel by remember(app) { mutableStateOf(app.customLabel.ifBlank { app.defaultLabel }) }
     var selectedCamouflage by remember(app) { mutableStateOf(app.camouflageType) }
+    var isPinned by remember(app) { mutableStateOf(app.isPinnedHome) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -199,25 +200,34 @@ fun AppCustomizeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Nút Ghim Home
+                    // Nút Ghim Home với phản hồi trực quan ngay lập tức
                     OutlinedButton(
                         onClick = {
+                            isPinned = !isPinned
                             onTogglePin()
-                            onDismiss()
                         },
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isPinned) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isPinned) accentColor.copy(alpha = 0.15f) else Color.Transparent
+                        )
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.PushPin,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = if (app.isPinnedHome) accentColor else MaterialTheme.colorScheme.onSurface
+                            tint = if (isPinned) accentColor else MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (app.isPinnedHome) "Bỏ ghim" else "Ghim Home",
-                            fontSize = 11.sp
+                            text = if (isPinned) "Đã Ghim Home" else "Ghim Home",
+                            fontSize = 11.sp,
+                            fontWeight = if (isPinned) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isPinned) accentColor else MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -279,7 +289,8 @@ fun AppCustomizeDialog(
                 // Nút Lưu thay đổi
                 Button(
                     onClick = {
-                        onSave(editedLabel, selectedCamouflage)
+                        onSave(editedLabel, selectedCamouflage, isPinned)
+                        onDismiss()
                     },
                     modifier = Modifier
                         .fillMaxWidth()

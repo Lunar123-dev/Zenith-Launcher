@@ -107,12 +107,61 @@ enum class CamouflageType(
 }
 
 /**
+ * Bộ biểu tượng riêng có thể biến đổi theo từng chủ đề (Theme Morphing Icon Packs)
+ */
+enum class IconPackStyle(val label: String, val description: String) {
+    THEME_ADAPTIVE("Tự động theo Chủ đề", "Icon đổi màu, viền neon/gradient và độ mờ ăn khớp trực tiếp theo Theme & Accent đã chọn"),
+    ANDROID_TV_CLASSIC("Android TV Cổ điển", "Khung squircle gradient mờ tinh tế phong cách Leanback TV nguyên bản"),
+    CYBER_NEON("Cyberpunk Neon Glow", "Viền phát quang dạ quang sắc nét với hiệu ứng đổ bóng neon rực rỡ"),
+    GLASS_FROST("Thủy tinh Mờ Frost", "Kính mờ xuyên thấu sang trọng phong cách Frosted Glassmorphism"),
+    MINIMAL_OUTLINE("Đơn sắc Tối giản", "Biểu tượng vector phẳng hiện đại trên nền đen AMOLED tiết kiệm pin"),
+    RETRO_PIXEL("Arcade 8-Bit Retro", "Đậm chất hoài niệm máy chơi game TV cổ điển")
+}
+
+/**
+ * Vị trí đặt thông tin hệ thống và widget trên màn hình
+ */
+enum class InfoPlacement(val label: String, val description: String) {
+    TOP_BAR("Thanh trên cùng (Android TV)", "Đồng hồ, mạng, bluetooth và thiết bị hiển thị gọn trên thanh tiêu đề"),
+    HERO_WIDGET_ROW("Dải Widget trung tâm", "Hiển thị dạng thẻ lớn nổi bật ngay trên các hàng ứng dụng"),
+    BOTTOM_BAR("Thanh thông tin bên dưới", "Widget và trạng thái đặt cố định ở thanh đáy màn hình"),
+    SIDE_PANEL("Cột thông tin bên góc", "Cột tóm tắt nhanh trạng thái hệ thống và gia đình"),
+    MINIMAL_HIDDEN("Ẩn bớt để tối giản", "Chỉ hiển thị các biểu tượng cần thiết nhất")
+}
+
+/**
+ * Các nguồn cổng đầu vào TV (TV Input Sources)
+ */
+data class TvInputSource(
+    val id: String,
+    val name: String,
+    val customAlias: String = "",
+    val isConnected: Boolean = true,
+    val isArc: Boolean = false,
+    val inputType: TvInputType = TvInputType.HDMI
+) {
+    val displayLabel: String
+        get() = if (customAlias.isNotBlank()) customAlias else name
+}
+
+enum class TvInputType(val label: String) {
+    HDMI("Cổng HDMI"),
+    AV("Cổng AV / RCA"),
+    TV_TUNER("Truyền hình DVB-T2 / Anten"),
+    USB_MEDIA("Ổ đĩa USB / Ổ cứng"),
+    OPTICAL("Cổng âm thanh quang")
+}
+
+/**
  * Widget thông minh trên màn hình chính
  */
-enum class SmartWidgetType(val label: String) {
-    CLOCK_WEATHER("Đồng hồ & Thời tiết"),
-    SYSTEM_STATS("Hiệu năng & Pin"),
-    STICKY_NOTE("Ghi chú nhanh Zen")
+enum class SmartWidgetType(val label: String, val shortTitle: String) {
+    FAMILY_DEVICES("Thiết bị Gia đình từ xa", "Gia đình"),
+    TV_INPUTS("Cổng đầu vào TV (HDMI/AV)", "Cổng TV"),
+    NETWORK_BLUETOOTH("Mạng & Bluetooth", "Kết nối"),
+    CLOCK_WEATHER("Đồng hồ & Thời tiết", "Thời tiết"),
+    SYSTEM_STATS("Hiệu năng & Pin", "Hệ thống"),
+    STICKY_NOTE("Ghi chú nhanh Zen", "Ghi chú")
 }
 
 /**
@@ -148,6 +197,8 @@ data class LauncherSettings(
     val accentColor: AccentColorOption = AccentColorOption.CYAN_NEON,
     val iconShape: IconShape = IconShape.SQUIRCLE,
     val iconSize: IconSize = IconSize.STANDARD,
+    val iconPackStyle: IconPackStyle = IconPackStyle.THEME_ADAPTIVE,
+    val infoPlacement: InfoPlacement = InfoPlacement.TOP_BAR,
     val showAppLabels: Boolean = true,
     val gridColumns: Int = 4,
     val wallpaper: WallpaperOption = WallpaperOption.TV_CINEMATIC,
@@ -156,6 +207,15 @@ data class LauncherSettings(
     val extremeBatterySaver: Boolean = false,
     val vaultPin: String = "1234",
     val disguiseCalculatorEnabled: Boolean = true,
-    val activeWidget: SmartWidgetType = SmartWidgetType.CLOCK_WEATHER,
-    val stickyNoteText: String = "Zenith TV Launcher: Tự động vừa khít mọi màn hình, mượt mà và bảo mật."
+    val activeWidget: SmartWidgetType = SmartWidgetType.FAMILY_DEVICES,
+    val stickyNoteText: String = "Zenith TV Launcher: Tự động vừa khít mọi màn hình, mượt mà và bảo mật.",
+    val showClock: Boolean = true,
+    val showDate: Boolean = true,
+    val showWeather: Boolean = true,
+    val showNetworkStatus: Boolean = true,
+    val showBluetoothStatus: Boolean = true,
+    val showBatteryStatus: Boolean = true,
+    val showFamilyDevicesWidget: Boolean = true,
+    val showTvInputsShortcut: Boolean = true,
+    val activeTvInputId: String = "hdmi_1"
 )

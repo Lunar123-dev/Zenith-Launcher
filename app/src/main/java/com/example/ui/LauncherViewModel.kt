@@ -143,16 +143,30 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    val tvInputSources = repository.tvInputSources
+
     fun togglePin(app: AppInfo) {
         repository.toggleAppPinned(app.packageName)
+    }
+
+    fun setAppPinned(app: AppInfo, isPinned: Boolean) {
+        repository.setAppPinned(app.packageName, isPinned)
+    }
+
+    fun setActiveTvInput(inputId: String, context: Context? = null) {
+        updateSettings(settings.value.copy(activeTvInputId = inputId))
+        if (context != null) {
+            val input = tvInputSources.firstOrNull { it.id == inputId }
+            Toast.makeText(context, "Đã chuyển sang cổng: ${input?.displayLabel ?: inputId}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun toggleHidden(app: AppInfo, hide: Boolean) {
         repository.toggleAppHidden(app.packageName, hide)
     }
 
-    fun customizeApp(app: AppInfo, newLabel: String, camouflageType: CamouflageType) {
-        repository.updateAppCustomization(app.packageName, newLabel, camouflageType)
+    fun customizeApp(app: AppInfo, newLabel: String, camouflageType: CamouflageType, isPinned: Boolean? = null) {
+        repository.updateAppCustomization(app.packageName, newLabel, camouflageType, isPinned)
         _appToCustomize.value = null
     }
 

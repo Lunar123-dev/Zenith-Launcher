@@ -31,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.Bluetooth
+import androidx.compose.material.icons.rounded.Cable
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ColorLens
 import androidx.compose.material.icons.rounded.DarkMode
@@ -40,11 +42,15 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Nightlight
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.People
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.StayCurrentLandscape
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -77,8 +83,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AccentColorOption
+import com.example.data.model.IconPackStyle
 import com.example.data.model.IconShape
 import com.example.data.model.IconSize
+import com.example.data.model.InfoPlacement
 import com.example.data.model.LauncherSettings
 import com.example.data.model.OrientationMode
 import com.example.data.model.ThemeStyle
@@ -97,7 +105,8 @@ fun SettingsScreen(
     onOpenVault: () -> Unit,
     onOpenScreensaver: () -> Unit,
     onSetDefaultLauncher: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenFamilyMonitor: () -> Unit = {}
 ) {
     BackHandler {
         onBack()
@@ -107,7 +116,6 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val accentColor = Color(settings.accentColor.hex)
 
-    // Bộ chọn ảnh Android Photo Picker tiêu chuẩn không cần xin quyền rộng
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
@@ -152,7 +160,7 @@ fun SettingsScreen(
                             modifier = Modifier.size(22.dp)
                         )
                         Text(
-                            text = "Cá Nhân Hóa Zenith Launcher TV",
+                            text = "Cài Đặt Zenith Launcher TV",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
@@ -182,323 +190,300 @@ fun SettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Mục 1: Màn hình chính mặc định & Màn hình chờ TV Ambient
+            // MỤC 1: TÙY CHỌN HIỂN THỊ THÔNG TIN VÀ VỊ TRÍ ĐẶT
             item {
                 SettingsSectionCard(
-                    title = "Màn Hình Mặc Định & Màn Hình Chờ TV",
-                    icon = Icons.Rounded.Home,
+                    title = "Vị Trí & Hiển Thị Thông Tin Hệ Thống",
+                    icon = Icons.Rounded.Tune,
                     accentColor = accentColor
                 ) {
                     Text(
-                        text = "Đặt Zenith làm Trình khởi chạy / Màn hình chính mặc định hoặc trải nghiệm màn hình chờ TV nghệ thuật:",
+                        text = "Vị trí đặt các thanh thông tin, widget và trạng thái thiết bị:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(InfoPlacement.values()) { placement ->
+                            FilterChip(
+                                selected = settings.infoPlacement == placement,
+                                onClick = { onSettingsChanged(settings.copy(infoPlacement = placement)) },
+                                label = { Text(placement.label, fontSize = 11.5.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = accentColor,
+                                    selectedLabelColor = Color.Black
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = "Tùy chọn bật/tắt từng thông tin trên màn hình chính:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    SettingToggleRow(
+                        title = "Đồng hồ và ngày giờ",
+                        subtitle = "Hiển thị giờ kỹ thuật số và thứ ngày tháng",
+                        checked = settings.showClock,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showClock = it)) }
+                    )
+
+                    SettingToggleRow(
+                        title = "Dự báo thời tiết & Nhiệt độ",
+                        subtitle = "Hiển thị nhiệt độ hiện tại trên thanh TV",
+                        checked = settings.showWeather,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showWeather = it)) }
+                    )
+
+                    SettingToggleRow(
+                        title = "Trạng thái Mạng (Wi-Fi / Ethernet)",
+                        subtitle = "Hiển thị tên Wi-Fi và chất lượng kết nối trực tiếp",
+                        checked = settings.showNetworkStatus,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showNetworkStatus = it)) }
+                    )
+
+                    SettingToggleRow(
+                        title = "Trạng thái Bluetooth",
+                        subtitle = "Hiển thị biểu tượng kết nối điều khiển TV và phụ kiện",
+                        checked = settings.showBluetoothStatus,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showBluetoothStatus = it)) }
+                    )
+
+                    SettingToggleRow(
+                        title = "Mức Pin & Nguồn điện sạc",
+                        subtitle = "Hiển thị phần trăm pin và biểu tượng cắm nguồn",
+                        checked = settings.showBatteryStatus,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showBatteryStatus = it)) }
+                    )
+
+                    SettingToggleRow(
+                        title = "Huy hiệu Thiết bị Gia đình từ xa",
+                        subtitle = "Hiển thị số lượng máy trực tuyến qua tài khoản Gmail",
+                        checked = settings.showFamilyDevicesWidget,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showFamilyDevicesWidget = it)) }
+                    )
+
+                    SettingToggleRow(
+                        title = "Lối tắt Cổng đầu vào TV (HDMI/AV)",
+                        subtitle = "Hiển thị nút chuyển nhanh cổng trên thanh TV",
+                        checked = settings.showTvInputsShortcut,
+                        accentColor = accentColor,
+                        onCheckedChange = { onSettingsChanged(settings.copy(showTvInputsShortcut = it)) }
+                    )
+                }
+            }
+
+            // MỤC 2: BỘ BIỂU TƯỢNG BIẾN ĐỔI THEO TỪNG CHỦ ĐỀ (THEME MORPHING ICON PACKS)
+            item {
+                SettingsSectionCard(
+                    title = "Bộ Icon Biến Đổi Theo Chủ Đề",
+                    icon = Icons.Rounded.Palette,
+                    accentColor = accentColor
+                ) {
+                    Text(
+                        text = "Chọn phong cách bộ icon tự biến đổi:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IconPackStyle.values().forEach { pack ->
+                            val isSelected = settings.iconPackStyle == pack
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) accentColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) accentColor else Color.White.copy(alpha = 0.1f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSettingsChanged(settings.copy(iconPackStyle = pack)) }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = pack.label,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = pack.description,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                                        )
+                                    }
+
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = accentColor,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Hình dáng biểu tượng (Icon Shape):",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(IconShape.values()) { shape ->
+                            FilterChip(
+                                selected = settings.iconShape == shape,
+                                onClick = { onSettingsChanged(settings.copy(iconShape = shape)) },
+                                label = { Text(shape.label, fontSize = 11.5.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = accentColor,
+                                    selectedLabelColor = Color.Black
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "Kích thước biểu tượng:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        IconSize.values().forEach { size ->
+                            FilterChip(
+                                selected = settings.iconSize == size,
+                                onClick = { onSettingsChanged(settings.copy(iconSize = size)) },
+                                label = { Text(size.label, fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = accentColor,
+                                    selectedLabelColor = Color.Black
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // MỤC 3: THEO DÕI & QUẢN LÝ THIẾT BỊ GIA ĐÌNH TỪ XA QUA GMAIL
+            item {
+                SettingsSectionCard(
+                    title = "Theo Dõi Thiết Bị Gia Đình Từ Xa",
+                    icon = Icons.Rounded.People,
+                    accentColor = accentColor
+                ) {
+                    Text(
+                        text = "Đồng bộ trạng thái pin, mạng, RAM và điều khiển rung/chuông cảnh báo giữa các máy trong gia đình qua tài khoản Gmail:",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Nút Đặt làm Mặc định
-                        Button(
-                            onClick = onSetDefaultLauncher,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Home,
-                                contentDescription = null,
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Đặt Mặc Định", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-
-                        // Nút Bật Màn hình chờ Ambient
-                        OutlinedButton(
-                            onClick = onOpenScreensaver,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Nightlight,
-                                contentDescription = null,
-                                tint = accentColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Màn Hình Chờ TV", color = accentColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                        }
-                    }
-                }
-            }
-
-            // Mục 2: Hướng hiển thị màn hình (Orientation Mode - Ngang TV / Tự động)
-            item {
-                SettingsSectionCard(
-                    title = "Hướng Màn Hình (Phong Cách TV)",
-                    icon = Icons.Rounded.StayCurrentLandscape,
-                    accentColor = accentColor
-                ) {
-                    Text(
-                        text = "Chọn cách hiển thị giao diện phù hợp với thiết bị của bạn:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OrientationMode.values().forEach { mode ->
-                            val isSelected = settings.orientationMode == mode
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        if (isSelected) accentColor.copy(alpha = 0.15f)
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                    )
-                                    .clickable {
-                                        onSettingsChanged(settings.copy(orientationMode = mode))
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = when (mode) {
-                                            OrientationMode.FORCE_LANDSCAPE -> Icons.Rounded.Tv
-                                            OrientationMode.AUTO -> Icons.Rounded.StayCurrentLandscape
-                                            OrientationMode.PORTRAIT -> Icons.Rounded.GridView
-                                        },
-                                        contentDescription = null,
-                                        tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                        text = mode.label,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                        ),
-                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Check,
-                                        contentDescription = null,
-                                        tint = accentColor,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Mục 3: Hình nền tùy chọn từ thư viện ảnh/file & AMOLED TV
-            item {
-                SettingsSectionCard(
-                    title = "Hình Nền Launcher (Thư Viện & AMOLED)",
-                    icon = Icons.Rounded.Image,
-                    accentColor = accentColor
-                ) {
-                    Text(
-                        text = "Chọn hình nền điện ảnh TV có sẵn hoặc đổi ảnh từ thư viện của bạn:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Nút chọn ảnh từ Thư viện / Tệp
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            }
-                            .border(
-                                width = 1.5.dp,
-                                color = if (settings.wallpaper == WallpaperOption.CUSTOM_IMAGE) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .testTag("pick_custom_wallpaper_button"),
-                        color = if (settings.wallpaper == WallpaperOption.CUSTOM_IMAGE) accentColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.AddPhotoAlternate,
-                                    contentDescription = null,
-                                    tint = accentColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Column {
-                                    Text(
-                                        text = "Chọn ảnh từ Thư viện hoặc Tệp máy",
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                        color = if (settings.wallpaper == WallpaperOption.CUSTOM_IMAGE) accentColor else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = if (settings.customWallpaperPath != null) "Đang dùng: ${File(settings.customWallpaperPath!!).name}" else "Hỗ trợ JPEG, PNG, WEBP từ máy bạn",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                }
-                            }
-
-                            if (settings.wallpaper == WallpaperOption.CUSTOM_IMAGE) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Check,
-                                    contentDescription = null,
-                                    tint = accentColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text(
-                        text = "Bộ sưu tập hình nền tối giản cài sẵn:",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Button(
+                        onClick = onOpenFamilyMonitor,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(WallpaperOption.values().filter { it != WallpaperOption.CUSTOM_IMAGE }) { wallpaper ->
-                            val isSelected = settings.wallpaper == wallpaper
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .border(
-                                        width = if (isSelected) 2.5.dp else 1.dp,
-                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                                        shape = RoundedCornerShape(12.dp)
-                                    )
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                                    .clickable {
-                                        onSettingsChanged(settings.copy(wallpaper = wallpaper))
-                                    }
-                                    .padding(8.dp)
-                                    .width(90.dp)
-                                    .testTag("wallpaper_${wallpaper.name}")
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(74.dp, 80.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(
-                                            when (wallpaper) {
-                                                WallpaperOption.TV_CINEMATIC -> Brush.verticalGradient(listOf(Color(0xFF030D1B), Color(0xFF0D253A), Color(0xFF00E5FF)))
-                                                WallpaperOption.AMOLED_BLACK -> Brush.verticalGradient(listOf(Color.Black, Color.Black))
-                                                WallpaperOption.NEON_HORIZON -> Brush.verticalGradient(listOf(Color(0xFF07090E), Color(0xFF140D2E), Color(0xFF00E5FF)))
-                                                WallpaperOption.ZEN_MOON -> Brush.verticalGradient(listOf(Color(0xFF020408), Color(0xFF0B1426), Color(0xFF1B2B48)))
-                                                WallpaperOption.AURORA_GRADIENT -> Brush.verticalGradient(listOf(Color(0xFF030D1B), Color(0xFF004D40), Color(0xFF00E676)))
-                                                WallpaperOption.CYBER_GRID -> Brush.verticalGradient(listOf(Color(0xFF0D0221), Color(0xFF0F084B), Color(0xFF26408B)))
-                                                else -> Brush.verticalGradient(listOf(Color.Black, Color.Black))
-                                            }
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isSelected) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .clip(CircleShape)
-                                                .background(accentColor),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Check,
-                                                contentDescription = null,
-                                                tint = Color.Black,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = wallpaper.label,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                                    maxLines = 1,
-                                    color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
+                        Icon(
+                            imageVector = Icons.Rounded.People,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Mở Trung Tâm Giám Sát Từ Xa",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
 
-            // Mục 4: Chế độ giao diện & Màu chủ đạo
+            // MỤC 4: HÌNH NỀN VÀ MÀU SẮC ĐIỂM NHẤN
             item {
-                SettingsSectionCard(title = "Chế Độ Giao Diện & Màu Sắc", icon = Icons.Rounded.Palette, accentColor = accentColor) {
+                SettingsSectionCard(
+                    title = "Chủ Đề, Màu Sắc & Hình Nền",
+                    icon = Icons.Rounded.ColorLens,
+                    accentColor = accentColor
+                ) {
+                    Text(
+                        text = "Chế độ giao diện (Theme Style):",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         ThemeStyle.values().forEach { theme ->
                             val isSelected = settings.themeStyle == theme
-                            Row(
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) accentColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) accentColor else Color.White.copy(alpha = 0.1f)
+                                ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        if (isSelected) accentColor.copy(alpha = 0.12f)
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                    )
-                                    .clickable {
-                                        onSettingsChanged(settings.copy(themeStyle = theme))
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .clickable { onSettingsChanged(settings.copy(themeStyle = theme)) }
                             ) {
-                                Column {
-                                    Text(
-                                        text = theme.label,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = theme.description,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Check,
-                                        contentDescription = null,
-                                        tint = accentColor,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = theme.label,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = theme.description,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = accentColor
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -507,7 +492,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
-                        text = "Màu sắc điểm nhấn (Accent):",
+                        text = "Màu sắc điểm nhấn (Accent Colors):",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -531,8 +516,7 @@ fun SettingsScreen(
                                     )
                                     .clickable {
                                         onSettingsChanged(settings.copy(accentColor = opt))
-                                    }
-                                    .testTag("accent_${opt.name}"),
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (isSelected) {
@@ -546,64 +530,129 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Hình nền Launcher (Hỗ trợ ảnh từ máy):",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Chọn ảnh nền từ Thư viện / Tệp máy", color = accentColor, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 
-            // Mục 5: Tùy biến Biểu tượng ứng dụng
+            // MỤC 5: HƯỚNG MÀN HÌNH VÀ MÀN HÌNH CHỜ TV
             item {
-                SettingsSectionCard(title = "Tùy Biến Biểu Tượng Ứng Dụng", icon = Icons.Rounded.GridView, accentColor = accentColor) {
-                    Text(
-                        text = "Hình dáng biểu tượng:",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                SettingsSectionCard(
+                    title = "Màn Hình Mặc Định & Màn Hình Chờ TV",
+                    icon = Icons.Rounded.Home,
+                    accentColor = accentColor
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(IconShape.values()) { shape ->
-                            FilterChip(
-                                selected = settings.iconShape == shape,
-                                onClick = { onSettingsChanged(settings.copy(iconShape = shape)) },
-                                label = { Text(shape.label, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = accentColor,
-                                    selectedLabelColor = Color.Black
-                                )
+                        Button(
+                            onClick = onSetDefaultLauncher,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Home,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(16.dp)
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Đặt Mặc Định", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = onOpenScreensaver,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Nightlight,
+                                contentDescription = null,
+                                tint = accentColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Màn Hình Chờ", color = accentColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Hiển thị tên ứng dụng",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
-                            )
-                            Text(
-                                text = "Ẩn tên để có giao diện siêu tối giản",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
+                    Text(
+                        text = "Hướng xoay màn hình:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                        Switch(
-                            checked = settings.showAppLabels,
-                            onCheckedChange = { onSettingsChanged(settings.copy(showAppLabels = it)) },
-                            colors = SwitchDefaults.colors(checkedThumbColor = accentColor)
-                        )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OrientationMode.values().forEach { mode ->
+                            val isSelected = settings.orientationMode == mode
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) accentColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 1.dp,
+                                    color = if (isSelected) accentColor else Color.Transparent
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSettingsChanged(settings.copy(orientationMode = mode)) }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = mode.label,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        ),
+                                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = accentColor,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // Mục 6: Bảo mật & Két ứng dụng
+            // MỤC 6: BẢO MẬT & KÉT ỨNG DỤNG
             item {
                 SettingsSectionCard(title = "Bảo Mật & Két Ứng Dụng", icon = Icons.Rounded.Security, accentColor = accentColor) {
                     Row(
@@ -644,6 +693,41 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun SettingToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    accentColor: Color,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(checkedThumbColor = accentColor)
+        )
+    }
+}
+
+@Composable
 fun SettingsSectionCard(
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -654,7 +738,7 @@ fun SettingsSectionCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
         )
     ) {
         Column(modifier = Modifier.padding(18.dp)) {

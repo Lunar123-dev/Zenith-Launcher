@@ -22,10 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.model.OrientationMode
+import com.example.ui.FamilyMonitorViewModel
 import com.example.ui.LauncherScreen
 import com.example.ui.LauncherViewModel
 import com.example.ui.components.AppCustomizeDialog
 import com.example.ui.screens.AppDrawerScreen
+import com.example.ui.screens.FamilyMonitorScreen
 import com.example.ui.screens.HiddenVaultScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ScreensaverScreen
@@ -38,6 +40,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val viewModel: LauncherViewModel = viewModel()
+            val familyViewModel: FamilyMonitorViewModel = viewModel()
+
             val settings by viewModel.settings.collectAsState()
             val currentScreen by viewModel.currentScreen.collectAsState()
             val visibleApps by viewModel.visibleApps.collectAsState()
@@ -48,6 +52,12 @@ class MainActivity : ComponentActivity() {
             val selectedCategory by viewModel.selectedCategory.collectAsState()
             val isVaultUnlocked by viewModel.isVaultUnlocked.collectAsState()
             val appToCustomize by viewModel.appToCustomize.collectAsState()
+
+            // Dữ liệu từ xa từ tài khoản Google / Firestore
+            val familyDevices by familyViewModel.devices.collectAsState()
+            val currentDevice by familyViewModel.currentDevice.collectAsState()
+            val familyName by familyViewModel.familyName.collectAsState()
+            val currentUser by familyViewModel.currentUser.collectAsState()
 
             val context = LocalContext.current
             val accentColor = Color(settings.accentColor.hex)
@@ -96,7 +106,15 @@ class MainActivity : ComponentActivity() {
                                     onOpenScreensaver = { viewModel.navigateTo(LauncherScreen.SCREENSAVER) },
                                     onSetDefaultLauncher = { viewModel.openDefaultLauncherSettings(context) },
                                     onSaveStickyNote = { note -> viewModel.updateStickyNote(note) },
-                                    onSwitchWidget = { widget -> viewModel.setSmartWidget(widget) }
+                                    onSwitchWidget = { widget -> viewModel.setSmartWidget(widget) },
+                                    onOpenFamilyMonitor = { viewModel.navigateTo(LauncherScreen.FAMILY_MONITOR) },
+                                    familyDevices = familyDevices,
+                                    currentDevice = currentDevice,
+                                    familyName = familyName,
+                                    userEmail = currentUser?.email,
+                                    tvInputSources = viewModel.tvInputSources,
+                                    onSelectTvInput = { viewModel.setActiveTvInput(it, context) },
+                                    onSetAppPinned = { app, isPinned -> viewModel.setAppPinned(app, isPinned) }
                                 )
                             }
 
@@ -146,7 +164,8 @@ class MainActivity : ComponentActivity() {
                                     onOpenVault = { viewModel.navigateTo(LauncherScreen.HIDDEN_VAULT) },
                                     onOpenScreensaver = { viewModel.navigateTo(LauncherScreen.SCREENSAVER) },
                                     onSetDefaultLauncher = { viewModel.openDefaultLauncherSettings(context) },
-                                    onBack = { viewModel.navigateTo(LauncherScreen.HOME) }
+                                    onBack = { viewModel.navigateTo(LauncherScreen.HOME) },
+                                    onOpenFamilyMonitor = { viewModel.navigateTo(LauncherScreen.FAMILY_MONITOR) }
                                 )
                             }
 
@@ -155,6 +174,14 @@ class MainActivity : ComponentActivity() {
                                     settings = settings,
                                     accentColor = accentColor,
                                     onWakeUp = { viewModel.navigateTo(LauncherScreen.HOME) }
+                                )
+                            }
+
+                            LauncherScreen.FAMILY_MONITOR -> {
+                                FamilyMonitorScreen(
+                                    viewModel = familyViewModel,
+                                    accentColor = accentColor,
+                                    onBack = { viewModel.navigateTo(LauncherScreen.HOME) }
                                 )
                             }
                         }
@@ -166,8 +193,9 @@ class MainActivity : ComponentActivity() {
                             app = app,
                             accentColor = accentColor,
                             onDismiss = { viewModel.setAppToCustomize(null) },
-                            onSave = { newLabel, camo ->
-                                viewModel.customizeApp(app, newLabel, camo)
+                            onSave = { newLabel, camo, isPinned ->
+                                viewModel.customizeApp(app, newLabel, camo, isPinned)
+                                viewModel.setAppToCustomize(null)
                             },
                             onTogglePin = { viewModel.togglePin(app) },
                             onToggleHidden = { hide -> viewModel.toggleHidden(app, hide) },

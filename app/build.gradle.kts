@@ -1,5 +1,8 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.text.SimpleDateFormat
 import java.time.Duration
+import java.util.Date
+import java.util.Locale
 
 plugins {
   alias(libs.plugins.android.application)
@@ -17,8 +20,8 @@ android {
     applicationId = "com.aistudio.zenithlauncher.vxpq"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 2
+    versionName = "1.2.0-tv"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -148,4 +151,23 @@ tasks.withType<Test> {
     events("passed", "failed", "skipped")
   }
 }
+
+tasks.register<Copy>("copyVersionedApk") {
+  val vName = android.defaultConfig.versionName ?: "1.0"
+  val vCode = android.defaultConfig.versionCode ?: 1
+  from(layout.buildDirectory.dir("outputs/apk/debug"))
+  include("app-debug.apk")
+  into(rootProject.layout.projectDirectory.dir("apks"))
+  rename {
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())
+    "Zenith_TV_Launcher_v${vName}_code${vCode}_${timestamp}.apk"
+  }
+}
+
+afterEvaluate {
+  tasks.named("assembleDebug") {
+    finalizedBy("copyVersionedApk")
+  }
+}
+
 

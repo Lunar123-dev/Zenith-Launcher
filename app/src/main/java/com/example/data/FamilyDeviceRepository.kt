@@ -14,6 +14,7 @@ import com.example.data.model.Family
 import com.example.data.model.OperationType
 import com.example.data.model.handleFirestoreError
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,21 +22,24 @@ import com.google.firebase.firestore.snapshots
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import kotlin.random.Random
 
-class FamilyDeviceRepository(private val db: FirebaseFirestore) {
+class FamilyDeviceRepository(
+    private val db: FirebaseFirestore,
+    private val auth: FirebaseAuth = Firebase.auth
+) {
 
     constructor(context: Context) : this(
         FirebaseFirestore.getInstance(
             context.applicationContext.getString(R.string.firestore_database_id)
-        )
+        ),
+        Firebase.auth
     )
-
-    private val auth = Firebase.auth
 
     private fun requireUserId(): String {
         return auth.currentUser?.uid

@@ -227,14 +227,16 @@ class LauncherRepository(private val context: Context) {
     fun updateAppCustomization(
         packageName: String,
         customLabel: String,
-        camouflageType: CamouflageType
+        camouflageType: CamouflageType,
+        isPinned: Boolean? = null
     ) {
         val currentList = _apps.value
         val updated = currentList.map { app ->
             if (app.packageName == packageName) {
                 app.copy(
                     customLabel = customLabel.trim(),
-                    camouflageType = camouflageType
+                    camouflageType = camouflageType,
+                    isPinnedHome = isPinned ?: app.isPinnedHome
                 )
             } else {
                 app
@@ -263,11 +265,27 @@ class LauncherRepository(private val context: Context) {
     /**
      * Ghim hoặc bỏ ghim ứng dụng trên Màn hình chính
      */
-    fun toggleAppPinned(packageName: String) {
+    fun toggleAppPinned(packageName: String): Boolean {
+        var newPinnedState = false
         val currentList = _apps.value
         val updated = currentList.map { app ->
             if (app.packageName == packageName) {
-                app.copy(isPinnedHome = !app.isPinnedHome)
+                newPinnedState = !app.isPinnedHome
+                app.copy(isPinnedHome = newPinnedState)
+            } else {
+                app
+            }
+        }
+        _apps.value = updated
+        saveCustomAppOverrides(updated)
+        return newPinnedState
+    }
+
+    fun setAppPinned(packageName: String, isPinned: Boolean) {
+        val currentList = _apps.value
+        val updated = currentList.map { app ->
+            if (app.packageName == packageName) {
+                app.copy(isPinnedHome = isPinned)
             } else {
                 app
             }
@@ -275,6 +293,18 @@ class LauncherRepository(private val context: Context) {
         _apps.value = updated
         saveCustomAppOverrides(updated)
     }
+
+    /**
+     * Danh sách các cổng đầu vào TV (HDMI, AV, TV Tuner)
+     */
+    val tvInputSources: List<com.example.data.model.TvInputSource> = listOf(
+        com.example.data.model.TvInputSource("hdmi_1", "HDMI 1", "PlayStation / TV Box", isConnected = true, inputType = com.example.data.model.TvInputType.HDMI),
+        com.example.data.model.TvInputSource("hdmi_2", "HDMI 2 (eARC)", "Dàn âm thanh Soundbar", isConnected = true, isArc = true, inputType = com.example.data.model.TvInputType.HDMI),
+        com.example.data.model.TvInputSource("hdmi_3", "HDMI 3", "Máy tính PC / Laptop", isConnected = false, inputType = com.example.data.model.TvInputType.HDMI),
+        com.example.data.model.TvInputSource("av_rca", "Cổng AV (RCA)", "Đầu đĩa / Đầu thu cũ", isConnected = false, inputType = com.example.data.model.TvInputType.AV),
+        com.example.data.model.TvInputSource("tv_tuner", "Truyền hình Kỹ thuật số", "DVB-T2 / Anten", isConnected = true, inputType = com.example.data.model.TvInputType.TV_TUNER),
+        com.example.data.model.TvInputSource("usb_media", "Bộ nhớ USB Media", "Xem phim & Nhạc USB", isConnected = true, inputType = com.example.data.model.TvInputType.USB_MEDIA)
+    )
 
     /**
      * Thay đổi danh mục thủ công cho ứng dụng
@@ -302,6 +332,8 @@ class LauncherRepository(private val context: Context) {
             putString("accent_color", newSettings.accentColor.name)
             putString("icon_shape", newSettings.iconShape.name)
             putString("icon_size", newSettings.iconSize.name)
+            putString("icon_pack_style", newSettings.iconPackStyle.name)
+            putString("info_placement", newSettings.infoPlacement.name)
             putBoolean("show_app_labels", newSettings.showAppLabels)
             putInt("grid_columns", newSettings.gridColumns)
             putString("wallpaper", newSettings.wallpaper.name)
@@ -312,6 +344,15 @@ class LauncherRepository(private val context: Context) {
             putBoolean("disguise_calc", newSettings.disguiseCalculatorEnabled)
             putString("active_widget", newSettings.activeWidget.name)
             putString("sticky_note", newSettings.stickyNoteText)
+            putBoolean("show_clock", newSettings.showClock)
+            putBoolean("show_date", newSettings.showDate)
+            putBoolean("show_weather", newSettings.showWeather)
+            putBoolean("show_network_status", newSettings.showNetworkStatus)
+            putBoolean("show_bluetooth_status", newSettings.showBluetoothStatus)
+            putBoolean("show_battery_status", newSettings.showBatteryStatus)
+            putBoolean("show_family_devices_widget", newSettings.showFamilyDevicesWidget)
+            putBoolean("show_tv_inputs_shortcut", newSettings.showTvInputsShortcut)
+            putString("active_tv_input_id", newSettings.activeTvInputId)
             apply()
         }
     }
@@ -341,6 +382,18 @@ class LauncherRepository(private val context: Context) {
             IconSize.STANDARD
         }
 
+        val iconPack = try {
+            com.example.data.model.IconPackStyle.valueOf(prefs.getString("icon_pack_style", com.example.data.model.IconPackStyle.THEME_ADAPTIVE.name)!!)
+        } catch (e: Exception) {
+            com.example.data.model.IconPackStyle.THEME_ADAPTIVE
+        }
+
+        val infoPlacement = try {
+            com.example.data.model.InfoPlacement.valueOf(prefs.getString("info_placement", com.example.data.model.InfoPlacement.TOP_BAR.name)!!)
+        } catch (e: Exception) {
+            com.example.data.model.InfoPlacement.TOP_BAR
+        }
+
         val wallpaper = try {
             WallpaperOption.valueOf(prefs.getString("wallpaper", WallpaperOption.TV_CINEMATIC.name)!!)
         } catch (e: Exception) {
@@ -354,9 +407,9 @@ class LauncherRepository(private val context: Context) {
         }
 
         val widget = try {
-            SmartWidgetType.valueOf(prefs.getString("active_widget", SmartWidgetType.CLOCK_WEATHER.name)!!)
+            SmartWidgetType.valueOf(prefs.getString("active_widget", SmartWidgetType.FAMILY_DEVICES.name)!!)
         } catch (e: Exception) {
-            SmartWidgetType.CLOCK_WEATHER
+            SmartWidgetType.FAMILY_DEVICES
         }
 
         return LauncherSettings(
@@ -364,6 +417,8 @@ class LauncherRepository(private val context: Context) {
             accentColor = accent,
             iconShape = shape,
             iconSize = size,
+            iconPackStyle = iconPack,
+            infoPlacement = infoPlacement,
             showAppLabels = prefs.getBoolean("show_app_labels", true),
             gridColumns = prefs.getInt("grid_columns", 4),
             wallpaper = wallpaper,
@@ -373,7 +428,16 @@ class LauncherRepository(private val context: Context) {
             vaultPin = prefs.getString("vault_pin", "1234") ?: "1234",
             disguiseCalculatorEnabled = prefs.getBoolean("disguise_calc", true),
             activeWidget = widget,
-            stickyNoteText = prefs.getString("sticky_note", "Zenith TV Launcher: Tự động vừa khít mọi màn hình, mượt mà và bảo mật.") ?: ""
+            stickyNoteText = prefs.getString("sticky_note", "Zenith TV Launcher: Tự động vừa khít mọi màn hình, mượt mà và bảo mật.") ?: "",
+            showClock = prefs.getBoolean("show_clock", true),
+            showDate = prefs.getBoolean("show_date", true),
+            showWeather = prefs.getBoolean("show_weather", true),
+            showNetworkStatus = prefs.getBoolean("show_network_status", true),
+            showBluetoothStatus = prefs.getBoolean("show_bluetooth_status", true),
+            showBatteryStatus = prefs.getBoolean("show_battery_status", true),
+            showFamilyDevicesWidget = prefs.getBoolean("show_family_devices_widget", true),
+            showTvInputsShortcut = prefs.getBoolean("show_tv_inputs_shortcut", true),
+            activeTvInputId = prefs.getString("active_tv_input_id", "hdmi_1") ?: "hdmi_1"
         )
     }
 

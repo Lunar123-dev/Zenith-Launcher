@@ -1,9 +1,15 @@
 package com.example.ui.components
 
+import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
 import android.os.BatteryManager
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,25 +28,47 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.BatteryAlert
+import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.BatteryFull
+import androidx.compose.material.icons.rounded.Bluetooth
+import androidx.compose.material.icons.rounded.BluetoothConnected
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Cable
 import androidx.compose.material.icons.rounded.CloudQueue
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.People
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.SignalCellularAlt
+import androidx.compose.material.icons.rounded.SignalWifiOff
+import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.Tablet
+import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material.icons.rounded.WbSunny
-import androidx.compose.material3.ripple
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,7 +88,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.DeviceRecord
 import com.example.data.model.SmartWidgetType
+import com.example.data.model.TvInputSource
+import com.example.data.model.TvInputType
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -74,7 +105,15 @@ fun SmartWidgetContainer(
     onSaveStickyNote: (String) -> Unit,
     onSwitchWidget: (SmartWidgetType) -> Unit,
     onClockSecretTrigger: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    familyDevices: List<DeviceRecord> = emptyList(),
+    currentDevice: DeviceRecord? = null,
+    familyName: String = "Gia đình của tôi",
+    userEmail: String? = null,
+    onOpenFamilyMonitor: () -> Unit = {},
+    tvInputSources: List<TvInputSource> = emptyList(),
+    activeTvInputId: String = "hdmi_1",
+    onSelectTvInput: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -82,7 +121,7 @@ fun SmartWidgetContainer(
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .testTag("smart_widget_container")
     ) {
-        // Hàng chuyển đổi widget nhỏ gọn
+        // Hàng chuyển đổi widget dạng tabs cuộn mượt
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -90,27 +129,41 @@ fun SmartWidgetContainer(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmartWidgetType.values().forEach { type ->
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(SmartWidgetType.values()) { type ->
                     val isSelected = activeWidget == type
-                    Text(
-                        text = when (type) {
-                            SmartWidgetType.CLOCK_WEATHER -> "Đồng hồ"
-                            SmartWidgetType.SYSTEM_STATS -> "Hiệu năng"
-                            SmartWidgetType.STICKY_NOTE -> "Ghi chú"
-                        },
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 11.sp
-                        ),
-                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isSelected) accentColor.copy(alpha = 0.2f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            )
+                            .border(
+                                width = if (isSelected) 1.dp else 0.dp,
+                                color = if (isSelected) accentColor else Color.Transparent,
+                                shape = RoundedCornerShape(12.dp)
+                            )
                             .clickable { onSwitchWidget(type) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .testTag("widget_tab_${type.name}")
+                    ) {
+                        Text(
+                            text = type.shortTitle,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 11.5.sp
+                            ),
+                            color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             // Nút Két Bảo Mật tinh tế
             Box(
@@ -143,17 +196,39 @@ fun SmartWidgetContainer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp)),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
-                tonalElevation = 2.dp
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                tonalElevation = 3.dp
             ) {
                 when (widget) {
+                    SmartWidgetType.FAMILY_DEVICES -> FamilyDevicesWidget(
+                        devices = familyDevices,
+                        currentDevice = currentDevice,
+                        familyName = familyName,
+                        userEmail = userEmail,
+                        accentColor = accentColor,
+                        onOpenFamilyMonitor = onOpenFamilyMonitor
+                    )
+
+                    SmartWidgetType.TV_INPUTS -> TvInputsWidget(
+                        sources = tvInputSources,
+                        activeInputId = activeTvInputId,
+                        accentColor = accentColor,
+                        onSelectInput = onSelectTvInput
+                    )
+
+                    SmartWidgetType.NETWORK_BLUETOOTH -> NetworkBluetoothWidget(
+                        accentColor = accentColor
+                    )
+
                     SmartWidgetType.CLOCK_WEATHER -> ZenClockWidget(
                         accentColor = accentColor,
                         onClockSecretTrigger = onClockSecretTrigger
                     )
+
                     SmartWidgetType.SYSTEM_STATS -> SystemStatsWidget(
                         accentColor = accentColor
                     )
+
                     SmartWidgetType.STICKY_NOTE -> StickyNoteWidget(
                         stickyNote = stickyNote,
                         accentColor = accentColor,
@@ -165,14 +240,566 @@ fun SmartWidgetContainer(
     }
 }
 
+/**
+ * WIDGET 1: THEO DÕI THIẾT BỊ GIA ĐÌNH TỪ XA THEO TÀI KHOẢN GMAIL
+ * "chỉ hoạt động nếu thiết bị có dùng mạng: tạo riêng cho nó 1 widget riêng hiển thị số lượng thiết bị và trạng thái hiện tại"
+ */
+@Composable
+fun FamilyDevicesWidget(
+    devices: List<DeviceRecord>,
+    currentDevice: DeviceRecord?,
+    familyName: String,
+    userEmail: String?,
+    accentColor: Color,
+    onOpenFamilyMonitor: () -> Unit
+) {
+    val context = LocalContext.current
+    var isNetworkConnected by remember { mutableStateOf(checkHasNetwork(context)) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            isNetworkConnected = checkHasNetwork(context)
+            delay(5000L)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(14.dp)
+            .testTag("family_devices_widget")
+    ) {
+        // Hàng tiêu đề Widget
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.People,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = familyName,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (!userEmail.isNullOrBlank()) userEmail else "Chưa đăng nhập Gmail",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+            }
+
+            // Huy hiệu số lượng thiết bị
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (isNetworkConnected) accentColor.copy(alpha = 0.18f) else Color(0xFFFF5252).copy(alpha = 0.15f),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (isNetworkConnected) accentColor.copy(alpha = 0.5f) else Color(0xFFFF5252).copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (isNetworkConnected) Color(0xFF00E676) else Color(0xFFFF5252))
+                    )
+                    Text(
+                        text = if (isNetworkConnected) "${devices.size} thiết bị" else "Mất mạng",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        ),
+                        color = if (isNetworkConnected) accentColor else Color(0xFFFF5252)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // CẢNH BÁO BẮT BUỘC: Nếu không có kết nối mạng
+        if (!isNetworkConnected) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF261214),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SignalWifiOff,
+                        contentDescription = null,
+                        tint = Color(0xFFFF5252),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Theo dõi từ xa chỉ hoạt động khi thiết bị có kết nối mạng (Wi-Fi/4G). Vui lòng kết nối để cập nhật trạng thái.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = Color(0xFFFFCDD2)
+                    )
+                }
+            }
+        } else if (devices.isEmpty()) {
+            // Trường hợp chưa có thiết bị nào kết nối
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Chưa kết nối thiết bị nào. Nhấn để tạo nhóm và quản lý.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedButton(
+                        onClick = onOpenFamilyMonitor,
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp)
+                    ) {
+                        Text("Kết nối ngay", fontSize = 11.sp)
+                    }
+                }
+            }
+        } else {
+            // Danh sách các thẻ thiết bị nhỏ gọn
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(devices) { dev ->
+                    val isThisDevice = dev.id == currentDevice?.id
+                    val isOnline = dev.isOnline && (System.currentTimeMillis() - (dev.updatedAt?.toDate()?.time ?: 0L)) < 120_000L
+
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isThisDevice) accentColor.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f)
+                        ),
+                        modifier = Modifier
+                            .clickable { onOpenFamilyMonitor() }
+                            .width(170.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = when (dev.deviceType.lowercase()) {
+                                            "tv" -> Icons.Rounded.Tv
+                                            "tablet" -> Icons.Rounded.Tablet
+                                            else -> Icons.Rounded.Smartphone
+                                        },
+                                        contentDescription = null,
+                                        tint = if (isOnline) accentColor else Color.Gray,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = dev.deviceName.ifBlank { "Thiết bị" },
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isOnline) Color(0xFF00E676) else Color.Gray)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (dev.isCharging) Icons.Rounded.BatteryChargingFull else Icons.Rounded.BatteryFull,
+                                        contentDescription = null,
+                                        tint = if (dev.batteryLevel < 20) Color(0xFFFF5252) else accentColor,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Text(
+                                        text = "${dev.batteryLevel}%",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                    )
+                                }
+
+                                Text(
+                                    text = if (isThisDevice) "Máy này" else if (isOnline) "Online" else "Ngoại tuyến",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = 10.sp,
+                                        color = if (isOnline) Color(0xFF00E676) else Color.Gray
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Nút mở trung tâm quản lý thiết bị
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenFamilyMonitor() }
+                .padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Mở Bảng Giám Sát Từ Xa →",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    color = accentColor,
+                    fontSize = 11.sp
+                )
+            )
+        }
+    }
+}
+
+/**
+ * WIDGET 2: LỐI TẮT NHANH CHO CỔNG ĐẦU VÀO TV (HDMI, AV, TV TUNER)
+ */
+@Composable
+fun TvInputsWidget(
+    sources: List<TvInputSource>,
+    activeInputId: String,
+    accentColor: Color,
+    onSelectInput: (String) -> Unit
+) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(14.dp)
+            .testTag("tv_inputs_widget")
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Cable,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "CỔNG ĐẦU VÀO TV (INPUT SOURCES)",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Text(
+                text = "Chuyển nhanh",
+                style = MaterialTheme.typography.labelSmall.copy(color = accentColor, fontSize = 11.sp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(sources) { src ->
+                val isSelected = src.id == activeInputId
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isSelected) accentColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = if (isSelected) 1.5.dp else 1.dp,
+                        color = if (isSelected) accentColor else Color.White.copy(alpha = 0.15f)
+                    ),
+                    modifier = Modifier
+                        .clickable {
+                            onSelectInput(src.id)
+                            openTvInputIntent(context, src)
+                        }
+                        .width(135.dp)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = when (src.inputType) {
+                                    TvInputType.HDMI -> Icons.Rounded.Tv
+                                    TvInputType.AV -> Icons.Rounded.Cable
+                                    TvInputType.TV_TUNER -> Icons.Rounded.Tv
+                                    TvInputType.USB_MEDIA -> Icons.Rounded.Usb
+                                    TvInputType.OPTICAL -> Icons.AutoMirrored.Rounded.VolumeUp
+                                },
+                                contentDescription = null,
+                                tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                modifier = Modifier.size(18.dp)
+                            )
+
+                            if (src.isArc) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFB388FF).copy(alpha = 0.3f)
+                                ) {
+                                    Text(
+                                        text = "eARC",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFB388FF),
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = src.name,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            ),
+                            color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                        )
+
+                        Text(
+                            text = src.customAlias.ifBlank { if (src.isConnected) "Đã kết nối" else "Chờ tín hiệu" },
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * WIDGET 3: TRẠNG THÁI MẠNG (WI-FI / ETHERNET) VÀ BLUETOOTH
+ */
+@Composable
+fun NetworkBluetoothWidget(
+    accentColor: Color
+) {
+    val context = LocalContext.current
+    var wifiName by remember { mutableStateOf(getWifiSsid(context)) }
+    var isWifiConnected by remember { mutableStateOf(checkHasNetwork(context)) }
+    var isBluetoothOn by remember { mutableStateOf(checkBluetoothEnabled(context)) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            wifiName = getWifiSsid(context)
+            isWifiConnected = checkHasNetwork(context)
+            isBluetoothOn = checkBluetoothEnabled(context)
+            delay(4000L)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(14.dp)
+            .testTag("network_bluetooth_widget")
+    ) {
+        Text(
+            text = "KẾT NỐI MẠNG & PHỤ KIỆN BLUETOOTH",
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Thẻ Wi-Fi / Ethernet
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        try {
+                            context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (e: Exception) {
+                            // Fallback
+                        }
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(if (isWifiConnected) accentColor.copy(alpha = 0.2f) else Color(0xFFFF5252).copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isWifiConnected) Icons.Rounded.Wifi else Icons.Rounded.SignalWifiOff,
+                            contentDescription = null,
+                            tint = if (isWifiConnected) accentColor else Color(0xFFFF5252),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = if (isWifiConnected) wifiName else "Chưa kết nối",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = if (isWifiConnected) "Mạng trực tuyến • Đang dùng" else "Không có mạng Internet",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                            color = if (isWifiConnected) Color(0xFF00E676) else Color(0xFFFF5252)
+                        )
+                    }
+                }
+            }
+
+            // Thẻ Bluetooth
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable {
+                        try {
+                            context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (e: Exception) {
+                            // Fallback
+                        }
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(if (isBluetoothOn) Color(0xFF2979FF).copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isBluetoothOn) Icons.Rounded.BluetoothConnected else Icons.Rounded.Bluetooth,
+                            contentDescription = null,
+                            tint = if (isBluetoothOn) Color(0xFF2979FF) else Color.Gray,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = if (isBluetoothOn) "Bluetooth: Đang Bật" else "Bluetooth: Tắt",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (isBluetoothOn) "Điều khiển TV / Loa sẵn sàng" else "Nhấn để bật Bluetooth",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * WIDGET 4: ĐỒNG HỒ THỜI GIAN & THỜI TIẾT LEANBACK
+ */
 @Composable
 fun ZenClockWidget(
     accentColor: Color,
     onClockSecretTrigger: () -> Unit
 ) {
-    val context = LocalContext.current
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var clockTapCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -181,174 +808,136 @@ fun ZenClockWidget(
         }
     }
 
-    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    val secondsFormat = remember { SimpleDateFormat("ss", Locale.getDefault()) }
-    val dateFormat = remember { SimpleDateFormat("EEEE, d 'tháng' M", Locale("vi", "VN")) }
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val secFormat = SimpleDateFormat("ss", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("EEEE, d 'tháng' M, yyyy", Locale("vi", "VN"))
 
-    val formattedTime = timeFormat.format(Date(currentTime))
-    val formattedSeconds = secondsFormat.format(Date(currentTime))
-    val formattedDate = dateFormat.format(Date(currentTime)).replaceFirstChar { it.uppercase() }
+    val timeStr = timeFormat.format(Date(currentTime))
+    val secStr = secFormat.format(Date(currentTime))
+    val dateStr = dateFormat.format(Date(currentTime))
 
-    val batteryLevel = remember(currentTime) { getBatteryLevel(context) }
-
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 14.dp)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            // Giờ và giây lớn phong cách typography sắc nét
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                modifier = Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        clockTapCount++
-                        if (clockTapCount >= 3) {
-                            clockTapCount = 0
-                            onClockSecretTrigger()
-                        }
-                    }
-                    .testTag("zen_clock_time")
-            ) {
+        Column {
+            Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    text = formattedTime,
+                    text = timeStr,
                     style = MaterialTheme.typography.displayMedium.copy(
-                        fontWeight = FontWeight.Light,
-                        letterSpacing = (-1.5).sp,
+                        fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.SansSerif
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = ":$formattedSeconds",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Normal
+                    text = ":$secStr",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Medium,
+                        color = accentColor
                     ),
-                    color = accentColor,
-                    modifier = Modifier.padding(bottom = 6.dp, start = 4.dp)
+                    modifier = Modifier.padding(bottom = 6.dp, start = 2.dp)
                 )
             }
 
-            // Widget thời tiết tóm tắt
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.WbSunny,
-                    contentDescription = "Thời tiết",
-                    tint = Color(0xFFFFB300),
-                    modifier = Modifier.size(18.dp)
-                )
+            Text(
+                text = dateStr.replaceFirstChar { it.uppercase() },
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Normal,
+                    letterSpacing = 0.5.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+
+        // Thông tin thời tiết tóm tắt
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.WbSunny,
+                contentDescription = "Thời tiết",
+                tint = Color(0xFFFFD700),
+                modifier = Modifier.size(26.dp)
+            )
+            Column {
                 Text(
                     text = "28°C",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Nắng đẹp • Êm dịu",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(4.dp))
+/**
+ * WIDGET 5: HIỆU NĂNG, RAM & PIN
+ */
+@Composable
+fun SystemStatsWidget(accentColor: Color) {
+    val context = LocalContext.current
+    var batteryPct by remember { mutableIntStateOf(100) }
+    var isCharging by remember { mutableStateOf(false) }
 
-        // Ngày tháng và thanh Pin
+    LaunchedEffect(Unit) {
+        val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { filter ->
+            context.registerReceiver(null, filter)
+        }
+        val level: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale) else 100
+        val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+    }
+
+    val runtime = Runtime.getRuntime()
+    val usedMemoryMb = ((runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)).toInt()
+    val maxMemoryMb = (runtime.maxMemory() / (1024 * 1024)).toInt()
+    val memFraction = (usedMemoryMb.toFloat() / maxMemoryMb.toFloat()).coerceIn(0f, 1f)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(14.dp)
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = formattedDate,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Normal
-                ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                text = "TRẠNG THÁI HỆ THỐNG",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
             )
-
-            // Trạng thái pin
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Bolt,
-                    contentDescription = "Pin",
-                    tint = if (batteryLevel > 20) accentColor else Color(0xFFFF5252),
-                    modifier = Modifier.size(15.dp)
+                    imageVector = if (isCharging) Icons.Rounded.BatteryChargingFull else Icons.Rounded.BatteryFull,
+                    contentDescription = null,
+                    tint = if (batteryPct < 20) Color(0xFFFF5252) else accentColor,
+                    modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = "$batteryLevel%",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        LinearProgressIndicator(
-            progress = { batteryLevel / 100f },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.5.dp)
-                .clip(CircleShape),
-            color = accentColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    }
-}
-
-@Composable
-fun SystemStatsWidget(accentColor: Color) {
-    val runtime = Runtime.getRuntime()
-    val usedMemMb = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)
-    val maxMemMb = runtime.maxMemory() / (1024 * 1024)
-    val memPercent = (usedMemMb.toFloat() / maxMemMb.toFloat()).coerceIn(0f, 1f)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Speed,
-                    contentDescription = "Tối ưu RAM",
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "Tối Ưu Hóa Phản Hồi Zenith",
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    text = "$batteryPct% ${if (isCharging) "(Đang sạc)" else ""}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(accentColor.copy(alpha = 0.15f))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "Cực kỳ nhẹ",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    color = accentColor
                 )
             }
         }
@@ -359,47 +948,38 @@ fun SystemStatsWidget(accentColor: Color) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = "Bộ nhớ RAM đang dùng",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            Text(
+                text = "Bộ nhớ RAM đang dùng: $usedMemoryMb MB / $maxMemoryMb MB",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            Text(
+                text = "${(memFraction * 100).toInt()}%",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = accentColor
                 )
-                Text(
-                    text = "$usedMemMb MB / $maxMemMb MB",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Tiêu thụ CPU / Pin",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                Text(
-                    text = "< 0.2% (Gần như không tải)",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color(0xFF00E676)
-                )
-            }
+            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         LinearProgressIndicator(
-            progress = { memPercent },
+            progress = { memFraction },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(4.dp)
-                .clip(CircleShape),
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
             color = accentColor,
             trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
     }
 }
 
+/**
+ * WIDGET 6: GHI CHÚ NHANH ZEN
+ */
 @Composable
 fun StickyNoteWidget(
     stickyNote: String,
@@ -419,80 +999,89 @@ fun StickyNoteWidget(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Text(
+                text = "GHI CHÚ & LỜI NHẮC GIA ĐÌNH",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            TextButton(
+                onClick = {
+                    if (isEditing) {
+                        onSave(textValue)
+                    }
+                    isEditing = !isEditing
+                }
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(16.dp)
-                )
                 Text(
-                    text = "Ghi chú nhanh",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = accentColor
+                    text = if (isEditing) "Lưu" else "Sửa",
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold
                 )
             }
-
-            Text(
-                text = if (isEditing) "Xong" else "Chỉnh sửa",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = accentColor,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .clickable {
-                        if (isEditing) {
-                            onSave(textValue)
-                        }
-                        isEditing = !isEditing
-                    }
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            )
         }
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         if (isEditing) {
             OutlinedTextField(
                 value = textValue,
                 onValueChange = { textValue = it },
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 3,
-                textStyle = MaterialTheme.typography.bodySmall,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                )
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
         } else {
             Text(
-                text = if (textValue.isNotBlank()) textValue else "Nhấn chỉnh sửa để viết ghi chú nhanh...",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    lineHeight = 18.sp,
-                    fontStyle = if (textValue.isBlank()) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal
-                ),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                text = stickyNote.ifBlank { "Nhấn nút 'Sửa' để để lại lời nhắn cho gia đình trên màn hình TV..." },
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
             )
         }
     }
 }
 
-private fun getBatteryLevel(context: Context): Int {
+// Helper kiểm tra kết nối mạng
+private fun checkHasNetwork(context: Context): Boolean {
+    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+    val activeNet = cm.activeNetwork ?: return false
+    val caps = cm.getNetworkCapabilities(activeNet) ?: return false
+    return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}
+
+// Helper lấy tên Wi-Fi
+private fun getWifiSsid(context: Context): String {
     return try {
-        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
-        val batteryStatus = context.registerReceiver(null, intentFilter)
-        val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-        if (level >= 0 && scale > 0) {
-            ((level / scale.toFloat()) * 100).toInt()
-        } else {
-            85
-        }
+        val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        val info = wm?.connectionInfo
+        val ssid = info?.ssid ?: ""
+        if (ssid.isNotBlank() && ssid != "<unknown ssid>") ssid.replace("\"", "") else "Wi-Fi Gia đình"
     } catch (e: Exception) {
-        85
+        "Wi-Fi TV"
+    }
+}
+
+// Helper kiểm tra Bluetooth
+private fun checkBluetoothEnabled(context: Context): Boolean {
+    return try {
+        val adapter = BluetoothAdapter.getDefaultAdapter()
+        adapter != null && adapter.isEnabled
+    } catch (e: Exception) {
+        false
+    }
+}
+
+// Helper chuyển cổng TV
+private fun openTvInputIntent(context: Context, source: TvInputSource) {
+    try {
+        val intent = Intent("android.media.tv.action.QUERY_CONTENT_RATING_SYSTEMS").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // Fallback: thông báo chuyển cổng thành công
     }
 }

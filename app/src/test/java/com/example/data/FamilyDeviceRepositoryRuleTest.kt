@@ -15,7 +15,7 @@ class FamilyDeviceRepositoryRuleTest : FirestoreEmulatorTestBase() {
 
     @Test
     fun unauthenticatedUser_failsSyncDevice() {
-        val repo = FamilyDeviceRepository(firestore)
+        val repo = FamilyDeviceRepository(firestore, auth)
         val dummy = DeviceRecord(
             id = "test_dev_1",
             userId = "anon",
@@ -46,7 +46,7 @@ class FamilyDeviceRepositoryRuleTest : FirestoreEmulatorTestBase() {
     @Test
     fun authenticatedUser_canSyncAndReadDevice() = runBlocking {
         val uid = signInTestUser("tester@example.com")
-        val repo = FamilyDeviceRepository(firestore)
+        val repo = FamilyDeviceRepository(firestore, auth)
 
         val device = DeviceRecord(
             id = "dev_auth_$uid",
