@@ -1,0 +1,179 @@
+{
+  "entities": {
+    "Family": {
+      "title": "Family",
+      "description": "Represents a family group for remote device synchronization and monitoring",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the family group"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the family group"
+        },
+        "code": {
+          "type": "string",
+          "description": "6-character alphanumeric code for joining the family"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of user who created the family"
+        },
+        "ownerEmail": {
+          "type": "string",
+          "description": "Email of the family owner"
+        },
+        "memberUids": {
+          "type": "array",
+          "description": "UIDs of authorized family members",
+          "items": { "type": "string" }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of family creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["id", "name", "code", "ownerId", "ownerEmail", "memberUids", "createdAt", "updatedAt"]
+    },
+    "Device": {
+      "title": "Device",
+      "description": "Represents a registered device and its real-time telemetry",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this device"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of user signed in on this device"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "Email of the user signed in on this device"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Display name of user or owner"
+        },
+        "familyId": {
+          "type": "string",
+          "description": "ID of the family group this device belongs to"
+        },
+        "familyCode": {
+          "type": "string",
+          "description": "Join code of the family group"
+        },
+        "memberUids": {
+          "type": "array",
+          "description": "List of user UIDs permitted to view and interact with this device",
+          "items": { "type": "string" }
+        },
+        "deviceName": {
+          "type": "string",
+          "description": "Customizable device label (e.g. TV Phong Khach)"
+        },
+        "deviceModel": {
+          "type": "string",
+          "description": "Hardware model or manufacturer name"
+        },
+        "deviceType": {
+          "type": "string",
+          "description": "Device category: TV, PHONE, or TABLET"
+        },
+        "batteryLevel": {
+          "type": "integer",
+          "description": "Battery percentage 0-100"
+        },
+        "isCharging": {
+          "type": "boolean",
+          "description": "True if connected to charger"
+        },
+        "ramUsedMb": {
+          "type": "integer",
+          "description": "Current RAM used in MB"
+        },
+        "ramTotalMb": {
+          "type": "integer",
+          "description": "Total device RAM in MB"
+        },
+        "networkType": {
+          "type": "string",
+          "description": "Connection type (WIFI, ETHERNET, CELLULAR, NONE)"
+        },
+        "networkName": {
+          "type": "string",
+          "description": "Connected WiFi SSID or carrier"
+        },
+        "isOnline": {
+          "type": "boolean",
+          "description": "Device online status"
+        },
+        "remoteMessage": {
+          "type": "string",
+          "description": "Last remote message sent to this device"
+        },
+        "remoteMessageSender": {
+          "type": "string",
+          "description": "Sender display name for remote message"
+        },
+        "ringAlert": {
+          "type": "boolean",
+          "description": "True if device is requested to ring remotely"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of registration"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last status heartbeat"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "userEmail",
+        "userName",
+        "familyId",
+        "familyCode",
+        "memberUids",
+        "deviceName",
+        "deviceModel",
+        "deviceType",
+        "batteryLevel",
+        "isCharging",
+        "ramUsedMb",
+        "ramTotalMb",
+        "networkType",
+        "networkName",
+        "isOnline",
+        "remoteMessage",
+        "remoteMessageSender",
+        "ringAlert",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/families/{familyId}": {
+      "schema": "Family",
+      "description": "Family group records shared across family members"
+    },
+    "/devices/{deviceId}": {
+      "schema": "Device",
+      "description": "Family device telemetry and remote actions"
+    }
+  }
+}

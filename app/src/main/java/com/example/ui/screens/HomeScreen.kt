@@ -40,6 +40,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Nightlight
+import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.ScreenRotation
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -116,6 +117,7 @@ fun HomeScreen(
     onSetDefaultLauncher: () -> Unit,
     onSaveStickyNote: (String) -> Unit,
     onSwitchWidget: (SmartWidgetType) -> Unit,
+    onOpenFamilyMonitor: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val accentColor = Color(settings.accentColor.hex)
@@ -156,7 +158,8 @@ fun HomeScreen(
                 onOpenSettings = onOpenSettings,
                 onOpenVault = onOpenVault,
                 onOpenScreensaver = onOpenScreensaver,
-                onSetDefaultLauncher = onSetDefaultLauncher
+                onSetDefaultLauncher = onSetDefaultLauncher,
+                onOpenFamilyMonitor = onOpenFamilyMonitor
             )
         } else {
             // Giao diện dọc thích ứng điện thoại, có nút chuyển nhanh sang TV Mode
@@ -173,7 +176,8 @@ fun HomeScreen(
                 onOpenScreensaver = onOpenScreensaver,
                 onSetDefaultLauncher = onSetDefaultLauncher,
                 onSaveStickyNote = onSaveStickyNote,
-                onSwitchWidget = onSwitchWidget
+                onSwitchWidget = onSwitchWidget,
+                onOpenFamilyMonitor = onOpenFamilyMonitor
             )
         }
     }
@@ -196,7 +200,8 @@ fun TvLandscapeHomeScreen(
     onOpenSettings: () -> Unit,
     onOpenVault: () -> Unit,
     onOpenScreensaver: () -> Unit,
-    onSetDefaultLauncher: () -> Unit
+    onSetDefaultLauncher: () -> Unit,
+    onOpenFamilyMonitor: () -> Unit = {}
 ) {
     var selectedChannelCategory by remember { mutableStateOf(AppCategory.ALL) }
 
@@ -214,7 +219,8 @@ fun TvLandscapeHomeScreen(
             onOpenSettings = onOpenSettings,
             onOpenVault = onOpenVault,
             onOpenScreensaver = onOpenScreensaver,
-            onSetDefaultLauncher = onSetDefaultLauncher
+            onSetDefaultLauncher = onSetDefaultLauncher,
+            onOpenFamilyMonitor = onOpenFamilyMonitor
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -352,7 +358,8 @@ fun TvTopHeader(
     onOpenSettings: () -> Unit,
     onOpenVault: () -> Unit,
     onOpenScreensaver: () -> Unit,
-    onSetDefaultLauncher: () -> Unit
+    onSetDefaultLauncher: () -> Unit,
+    onOpenFamilyMonitor: () -> Unit = {}
 ) {
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
@@ -515,6 +522,18 @@ fun TvTopHeader(
                     )
                 }
 
+                // Giám sát gia đình từ xa
+                IconButton(
+                    onClick = onOpenFamilyMonitor,
+                    modifier = Modifier.testTag("tv_family_monitor_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.People,
+                        contentDescription = "Giám sát thiết bị gia đình",
+                        tint = accentColor
+                    )
+                }
+
                 // Cài đặt
                 IconButton(
                     onClick = onOpenSettings,
@@ -667,7 +686,8 @@ fun PortraitHomeScreen(
     onOpenScreensaver: () -> Unit,
     onSetDefaultLauncher: () -> Unit,
     onSaveStickyNote: (String) -> Unit,
-    onSwitchWidget: (SmartWidgetType) -> Unit
+    onSwitchWidget: (SmartWidgetType) -> Unit,
+    onOpenFamilyMonitor: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -678,7 +698,7 @@ fun PortraitHomeScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            // Thanh chuyển sang Chế độ Ngang TV nhanh
+            // Thanh chuyển sang Chế độ Ngang TV nhanh và Giám sát gia đình
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -686,26 +706,50 @@ fun PortraitHomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(accentColor.copy(alpha = 0.15f))
-                        .clickable { onOpenScreensaver() }
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Nightlight,
-                        contentDescription = null,
-                        tint = accentColor,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = "Màn hình chờ TV",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = accentColor
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(accentColor.copy(alpha = 0.15f))
+                            .clickable { onOpenScreensaver() }
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Nightlight,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "Màn hình chờ TV",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = accentColor
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(accentColor.copy(alpha = 0.15f))
+                            .clickable { onOpenFamilyMonitor() }
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.People,
+                            contentDescription = null,
+                            tint = accentColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "Gia đình",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = accentColor
+                        )
+                    }
                 }
 
                 Row(
@@ -724,7 +768,7 @@ fun PortraitHomeScreen(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "Đặt làm Mặc định",
+                        text = "Đặt mặc định",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
