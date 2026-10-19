@@ -156,7 +156,6 @@ enum class TvInputType(val label: String) {
  * Widget thông minh trên màn hình chính
  */
 enum class SmartWidgetType(val label: String, val shortTitle: String) {
-    FAMILY_DEVICES("Thiết bị Gia đình từ xa", "Gia đình"),
     TV_INPUTS("Cổng đầu vào TV (HDMI/AV)", "Cổng TV"),
     NETWORK_BLUETOOTH("Mạng & Bluetooth", "Kết nối"),
     CLOCK_WEATHER("Đồng hồ & Thời tiết", "Thời tiết"),
@@ -207,7 +206,7 @@ data class LauncherSettings(
     val extremeBatterySaver: Boolean = false,
     val vaultPin: String = "1234",
     val disguiseCalculatorEnabled: Boolean = true,
-    val activeWidget: SmartWidgetType = SmartWidgetType.FAMILY_DEVICES,
+    val activeWidget: SmartWidgetType = SmartWidgetType.TV_INPUTS,
     val stickyNoteText: String = "Zenith TV Launcher: Tự động vừa khít mọi màn hình, mượt mà và bảo mật.",
     val showClock: Boolean = true,
     val showDate: Boolean = true,
@@ -215,7 +214,6 @@ data class LauncherSettings(
     val showNetworkStatus: Boolean = true,
     val showBluetoothStatus: Boolean = true,
     val showBatteryStatus: Boolean = true,
-    val showFamilyDevicesWidget: Boolean = true,
     val showTvInputsShortcut: Boolean = true,
     val activeTvInputId: String = "hdmi_1"
 )

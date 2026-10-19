@@ -77,30 +77,12 @@ class FamilyMonitorViewModel(application: Application) : AndroidViewModel(applic
 
         auth.addAuthStateListener { firebaseAuth ->
             _currentUser.value = firebaseAuth.currentUser
-            if (firebaseAuth.currentUser != null) {
-                onUserLoggedIn()
-            } else {
-                onUserLoggedOut()
-            }
         }
 
-        if (auth.currentUser != null) {
-            onUserLoggedIn()
-        }
-    }
-
-    private fun onUserLoggedIn() {
+        // Luôn khởi động theo dõi thiết bị hiện tại và nhóm gia đình (hỗ trợ cả khách và đã đăng nhập)
         startTelemetrySync()
         startObservingDevices()
         startObservingCurrentDevice()
-    }
-
-    private fun onUserLoggedOut() {
-        heartbeatJob?.cancel()
-        observeDevicesJob?.cancel()
-        observeCurrentJob?.cancel()
-        _devices.value = emptyList()
-        _currentDevice.value = null
     }
 
     fun startTelemetrySync() {
@@ -108,14 +90,12 @@ class FamilyMonitorViewModel(application: Application) : AndroidViewModel(applic
         heartbeatJob = viewModelScope.launch {
             val context = getApplication<Application>().applicationContext
             while (isActive) {
-                if (auth.currentUser != null) {
-                    try {
-                        val localTelemetry = repository.collectLocalTelemetry(context)
-                        _currentDevice.value = localTelemetry
-                        repository.syncCurrentDevice(localTelemetry)
-                    } catch (e: Exception) {
-                        // ignore or log
-                    }
+                try {
+                    val localTelemetry = repository.collectLocalTelemetry(context)
+                    _currentDevice.value = localTelemetry
+                    repository.syncCurrentDevice(localTelemetry)
+                } catch (e: Exception) {
+                    // ignore or log
                 }
                 delay(30_000L) // Cập nhật nhịp tim thiết bị mỗi 30 giây
             }

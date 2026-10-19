@@ -57,7 +57,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.StayCurrentLandscape
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.Usb
-import androidx.compose.material.icons.rounded.WbSunny
+import androidx.compose.material.icons.rounded.SignalWifiOff
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -267,13 +267,8 @@ fun TvLandscapeHomeScreen(
         TvTopHeader(
             settings = settings,
             accentColor = accentColor,
-            onOpenDrawer = onOpenDrawer,
             onOpenSettings = onOpenSettings,
-            onOpenVault = onOpenVault,
             onOpenScreensaver = onOpenScreensaver,
-            onSetDefaultLauncher = onSetDefaultLauncher,
-            onOpenFamilyMonitor = onOpenFamilyMonitor,
-            familyDevicesCount = familyDevices.size,
             activeTvInput = tvInputSources.firstOrNull { it.id == settings.activeTvInputId }?.displayLabel ?: "HDMI 1",
             onOpenInputPicker = { showInputPicker = true }
         )
@@ -298,11 +293,6 @@ fun TvLandscapeHomeScreen(
                         onSaveStickyNote = onSaveStickyNote,
                         onSwitchWidget = onSwitchWidget,
                         onClockSecretTrigger = onOpenVault,
-                        familyDevices = familyDevices,
-                        currentDevice = currentDevice,
-                        familyName = familyName,
-                        userEmail = userEmail,
-                        onOpenFamilyMonitor = onOpenFamilyMonitor,
                         tvInputSources = tvInputSources,
                         activeTvInputId = settings.activeTvInputId,
                         onSelectTvInput = onSelectTvInput
@@ -512,11 +502,6 @@ fun TvLandscapeHomeScreen(
                 onSaveStickyNote = onSaveStickyNote,
                 onSwitchWidget = onSwitchWidget,
                 onClockSecretTrigger = onOpenVault,
-                familyDevices = familyDevices,
-                currentDevice = currentDevice,
-                familyName = familyName,
-                userEmail = userEmail,
-                onOpenFamilyMonitor = onOpenFamilyMonitor,
                 tvInputSources = tvInputSources,
                 activeTvInputId = settings.activeTvInputId,
                 onSelectTvInput = onSelectTvInput
@@ -554,32 +539,27 @@ fun TvLandscapeHomeScreen(
 }
 
 /**
- * Thanh Tiêu Đề TV Mở Rộng: Hiển thị Live Clock, Mạng, Bluetooth, Pin, Huy Hiệu Thiết Bị Gia Đình
+ * Thanh Tiêu Đề TV Chuẩn Thu Gọn:
+ * Tên launcher - Ngày - Giờ - Trạng thái kết nối wifi/bluetooth - Chọn cổng kết nối - Màn hình chờ - Cài đặt chung
+ * Tối ưu hóa icon và chữ ngắn gọn, không bị tràn màn hình
  */
 @Composable
 fun TvTopHeader(
     settings: LauncherSettings,
     accentColor: Color,
-    onOpenDrawer: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenVault: () -> Unit,
     onOpenScreensaver: () -> Unit,
-    onSetDefaultLauncher: () -> Unit,
-    onOpenFamilyMonitor: () -> Unit = {},
-    familyDevicesCount: Int = 0,
     activeTvInput: String = "HDMI 1",
     onOpenInputPicker: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var wifiSsid by remember { mutableStateOf(getWifiSsid(context)) }
     var hasNet by remember { mutableStateOf(checkHasNetwork(context)) }
     var bluetoothOn by remember { mutableStateOf(checkBluetoothEnabled(context)) }
 
     LaunchedEffect(Unit) {
         while (true) {
             currentTime = System.currentTimeMillis()
-            wifiSsid = getWifiSsid(context)
             hasNet = checkHasNetwork(context)
             bluetoothOn = checkBluetoothEnabled(context)
             delay(1000L)
@@ -587,209 +567,182 @@ fun TvTopHeader(
     }
 
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    val secondsFormat = remember { SimpleDateFormat("ss", Locale.getDefault()) }
-    val dateFormat = remember { SimpleDateFormat("EEEE, d 'tháng' M", Locale("vi", "VN")) }
+    val dateFormat = remember { SimpleDateFormat("EEE, d/M", Locale("vi", "VN")) }
 
     val formattedTime = timeFormat.format(Date(currentTime))
-    val formattedSeconds = secondsFormat.format(Date(currentTime))
     val formattedDate = dateFormat.format(Date(currentTime)).replaceFirstChar { it.uppercase() }
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp)),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-        tonalElevation = 4.dp
+            .clip(RoundedCornerShape(16.dp)),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f),
+        tonalElevation = 3.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Bên trái: Biểu tượng TV, Giờ gọn, Thời tiết, Mạng, Bluetooth (chỉ icon nhỏ gọn)
+            // Bên trái: Tên launcher - Ngày - Giờ - Trạng thái kết nối wifi/bluetooth
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Biểu tượng TV
-                Box(
+                // 1. Tên launcher
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.18f)),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accentColor.copy(alpha = 0.16f))
+                        .padding(horizontal = 7.dp, vertical = 4.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Tv,
-                        contentDescription = "Zenith TV",
+                        contentDescription = "Zenith Launcher",
                         tint = accentColor,
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(15.dp)
                     )
-                }
-
-                // Giờ (chỉ số giờ:phút nhỏ gọn)
-                if (settings.showClock) {
                     Text(
-                        text = formattedTime,
-                        style = MaterialTheme.typography.titleMedium.copy(
+                        text = "Zenith",
+                        style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = accentColor
                     )
                 }
 
-                // Thời tiết (chỉ icon)
-                if (settings.showWeather) {
-                    Icon(
-                        imageVector = Icons.Rounded.WbSunny,
-                        contentDescription = "Thời tiết",
-                        tint = Color(0xFFFFB300),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                // 2. Ngày (rút gọn)
+                Text(
+                    text = formattedDate,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 11.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                )
 
-                // Trạng thái mạng Wi-Fi (chỉ icon với màu trực quan)
-                if (settings.showNetworkStatus) {
-                    Icon(
-                        imageVector = Icons.Rounded.Wifi,
-                        contentDescription = if (hasNet) "Mạng: $wifiSsid" else "Mất mạng",
-                        tint = if (hasNet) Color(0xFF00E676) else Color(0xFFFF5252),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                // 3. Giờ (HH:mm)
+                Text(
+                    text = formattedTime,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        letterSpacing = (-0.3).sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
 
-                // Trạng thái Bluetooth (chỉ icon)
-                if (settings.showBluetoothStatus && bluetoothOn) {
-                    Icon(
-                        imageVector = Icons.Rounded.Bluetooth,
-                        contentDescription = "Bluetooth đã bật",
-                        tint = Color(0xFF2979FF),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            // Bên phải: Toàn bộ nút chức năng thu gọn chỉ còn mỗi icon
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Lối tắt Cổng đầu vào TV (chỉ icon)
-                if (settings.showTvInputsShortcut) {
-                    IconButton(
-                        onClick = onOpenInputPicker,
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(accentColor.copy(alpha = 0.12f))
-                            .testTag("header_tv_inputs_icon")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Cable,
-                            contentDescription = "Cổng TV: $activeTvInput",
-                            tint = accentColor,
-                            modifier = Modifier.size(17.dp)
-                        )
-                    }
-                }
-
-                // Huy hiệu Theo Dõi Thiết Bị Gia Đình (chỉ icon + chấm online/offline)
-                if (settings.showFamilyDevicesWidget) {
+                // 4. Trạng thái kết nối Wi-Fi & Bluetooth (Chỉ icon thu gọn)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Icon Wi-Fi
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(24.dp)
                             .clip(CircleShape)
-                            .background(if (hasNet) accentColor.copy(alpha = 0.14f) else Color(0xFFFF5252).copy(alpha = 0.14f))
-                            .clickable(onClick = onOpenFamilyMonitor)
-                            .testTag("header_family_devices_pill"),
+                            .background(if (hasNet) Color(0xFF00E676).copy(alpha = 0.15f) else Color(0xFFFF5252).copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.People,
-                            contentDescription = "Thiết bị: $familyDevicesCount",
-                            tint = if (hasNet) accentColor else Color(0xFFFF5252),
-                            modifier = Modifier.size(17.dp)
+                            imageVector = if (hasNet) Icons.Rounded.Wifi else Icons.Rounded.SignalWifiOff,
+                            contentDescription = if (hasNet) "Wi-Fi kết nối" else "Mất mạng",
+                            tint = if (hasNet) Color(0xFF00E676) else Color(0xFFFF5252),
+                            modifier = Modifier.size(13.dp)
                         )
+                    }
+
+                    // Icon Bluetooth khi bật
+                    if (bluetoothOn) {
                         Box(
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(3.dp)
-                                .size(6.dp)
+                                .size(24.dp)
                                 .clip(CircleShape)
-                                .background(if (hasNet) Color(0xFF00E676) else Color(0xFFFF5252))
+                                .background(Color(0xFF2979FF).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Bluetooth,
+                                contentDescription = "Bluetooth đã bật",
+                                tint = Color(0xFF2979FF),
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bên phải: Chọn cổng kết nối - Màn hình chờ - Cài đặt chung
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // 5. Chọn cổng kết nối (TV Inputs)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = accentColor.copy(alpha = 0.14f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .clickable(onClick = onOpenInputPicker)
+                        .testTag("header_tv_inputs_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Cable,
+                            contentDescription = "Chọn cổng kết nối",
+                            tint = accentColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = activeTvInput,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor
                         )
                     }
                 }
 
-                // Đặt làm mặc định (chỉ icon)
-                IconButton(
-                    onClick = onSetDefaultLauncher,
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.14f))
-                        .testTag("header_default_launcher_icon")
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Home,
-                        contentDescription = "Đặt làm launcher mặc định",
-                        tint = accentColor,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
-
-                // Màn hình chờ (Screensaver)
+                // 6. Màn hình chờ (Screensaver)
                 IconButton(
                     onClick = onOpenScreensaver,
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .testTag("header_screensaver_button")
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Nightlight,
                         contentDescription = "Màn hình chờ",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
-                // Két bí mật
-                IconButton(
-                    onClick = onOpenVault,
-                    modifier = Modifier.size(34.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Lock,
-                        contentDescription = "Két ứng dụng ẩn",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
-
-                // Tất cả ứng dụng (App Drawer)
-                IconButton(
-                    onClick = onOpenDrawer,
-                    modifier = Modifier.size(34.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Apps,
-                        contentDescription = "Tất cả ứng dụng",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
-
-                // Cài đặt
+                // 7. Cài đặt chung (Settings)
                 IconButton(
                     onClick = onOpenSettings,
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .testTag("header_settings_button")
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Settings,
-                        contentDescription = "Cài đặt launcher",
+                        contentDescription = "Cài đặt chung",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        modifier = Modifier.size(17.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -1142,39 +1095,27 @@ fun PortraitHomeScreen(
     onSetAppPinned: (AppInfo, Boolean) -> Unit = { _, _ -> }
 ) {
     var showPinPicker by remember { mutableStateOf(false) }
+    var showInputPicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
+            .padding(horizontal = 8.dp)
     ) {
-        // Thanh đỉnh đầu nhanh
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(imageVector = Icons.Rounded.Tv, contentDescription = null, tint = accentColor, modifier = Modifier.size(18.dp))
-                Text("Zenith TV Leanback", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-            }
+        // 1. Thanh tiêu đề trên cùng chuẩn Android TV:
+        // Tên launcher - Ngày - Giờ - Trạng thái wifi/bluetooth - Chọn cổng kết nối - Màn hình chờ - Cài đặt chung
+        TvTopHeader(
+            settings = settings,
+            accentColor = accentColor,
+            onOpenSettings = onOpenSettings,
+            onOpenScreensaver = onOpenScreensaver,
+            activeTvInput = tvInputSources.firstOrNull { it.id == settings.activeTvInputId }?.displayLabel ?: "HDMI 1",
+            onOpenInputPicker = { showInputPicker = true }
+        )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                // Nút mở Family Monitor
-                IconButton(onClick = onOpenFamilyMonitor) {
-                    Icon(imageVector = Icons.Rounded.People, contentDescription = "Gia đình", tint = accentColor)
-                }
-                IconButton(onClick = onOpenSettings) {
-                    Icon(imageVector = Icons.Rounded.Settings, contentDescription = "Cài đặt")
-                }
-            }
-        }
+        Spacer(modifier = Modifier.height(6.dp))
 
         // Widget Thông minh chính
         SmartWidgetContainer(
@@ -1184,11 +1125,6 @@ fun PortraitHomeScreen(
             onSaveStickyNote = onSaveStickyNote,
             onSwitchWidget = onSwitchWidget,
             onClockSecretTrigger = onOpenVault,
-            familyDevices = familyDevices,
-            currentDevice = currentDevice,
-            familyName = familyName,
-            userEmail = userEmail,
-            onOpenFamilyMonitor = onOpenFamilyMonitor,
             tvInputSources = tvInputSources,
             activeTvInputId = settings.activeTvInputId,
             onSelectTvInput = onSelectTvInput
@@ -1267,6 +1203,19 @@ fun PortraitHomeScreen(
             themeStyle = settings.themeStyle,
             onTogglePin = onSetAppPinned,
             onDismiss = { showPinPicker = false }
+        )
+    }
+
+    if (showInputPicker) {
+        TvInputSourceChooserDialog(
+            sources = tvInputSources,
+            activeInputId = settings.activeTvInputId,
+            accentColor = accentColor,
+            onSelect = {
+                onSelectTvInput(it)
+                showInputPicker = false
+            },
+            onDismiss = { showInputPicker = false }
         )
     }
 }

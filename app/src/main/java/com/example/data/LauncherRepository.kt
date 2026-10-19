@@ -350,7 +350,6 @@ class LauncherRepository(private val context: Context) {
             putBoolean("show_network_status", newSettings.showNetworkStatus)
             putBoolean("show_bluetooth_status", newSettings.showBluetoothStatus)
             putBoolean("show_battery_status", newSettings.showBatteryStatus)
-            putBoolean("show_family_devices_widget", newSettings.showFamilyDevicesWidget)
             putBoolean("show_tv_inputs_shortcut", newSettings.showTvInputsShortcut)
             putString("active_tv_input_id", newSettings.activeTvInputId)
             apply()
@@ -407,9 +406,9 @@ class LauncherRepository(private val context: Context) {
         }
 
         val widget = try {
-            SmartWidgetType.valueOf(prefs.getString("active_widget", SmartWidgetType.FAMILY_DEVICES.name)!!)
+            SmartWidgetType.valueOf(prefs.getString("active_widget", SmartWidgetType.TV_INPUTS.name)!!)
         } catch (e: Exception) {
-            SmartWidgetType.FAMILY_DEVICES
+            SmartWidgetType.TV_INPUTS
         }
 
         return LauncherSettings(
@@ -435,7 +434,6 @@ class LauncherRepository(private val context: Context) {
             showNetworkStatus = prefs.getBoolean("show_network_status", true),
             showBluetoothStatus = prefs.getBoolean("show_bluetooth_status", true),
             showBatteryStatus = prefs.getBoolean("show_battery_status", true),
-            showFamilyDevicesWidget = prefs.getBoolean("show_family_devices_widget", true),
             showTvInputsShortcut = prefs.getBoolean("show_tv_inputs_shortcut", true),
             activeTvInputId = prefs.getString("active_tv_input_id", "hdmi_1") ?: "hdmi_1"
         )

@@ -106,11 +106,6 @@ fun SmartWidgetContainer(
     onSwitchWidget: (SmartWidgetType) -> Unit,
     onClockSecretTrigger: () -> Unit,
     modifier: Modifier = Modifier,
-    familyDevices: List<DeviceRecord> = emptyList(),
-    currentDevice: DeviceRecord? = null,
-    familyName: String = "Gia đình của tôi",
-    userEmail: String? = null,
-    onOpenFamilyMonitor: () -> Unit = {},
     tvInputSources: List<TvInputSource> = emptyList(),
     activeTvInputId: String = "hdmi_1",
     onSelectTvInput: (String) -> Unit = {}
@@ -200,14 +195,6 @@ fun SmartWidgetContainer(
                 tonalElevation = 3.dp
             ) {
                 when (widget) {
-                    SmartWidgetType.FAMILY_DEVICES -> FamilyDevicesWidget(
-                        devices = familyDevices,
-                        currentDevice = currentDevice,
-                        familyName = familyName,
-                        userEmail = userEmail,
-                        accentColor = accentColor,
-                        onOpenFamilyMonitor = onOpenFamilyMonitor
-                    )
 
                     SmartWidgetType.TV_INPUTS -> TvInputsWidget(
                         sources = tvInputSources,

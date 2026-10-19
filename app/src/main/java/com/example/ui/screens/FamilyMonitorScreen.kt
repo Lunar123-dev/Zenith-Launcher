@@ -194,18 +194,59 @@ fun FamilyMonitorScreen(
             }
 
             if (user == null) {
-                // Màn hình yêu cầu đăng nhập tài khoản Google
-                UnauthenticatedFamilyView(accentColor = accentColor)
-            } else {
-                // Family Info Card
+                // Banner tùy chọn đăng nhập Google để đồng bộ đa thiết bị
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF131822)),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF131A28)),
+                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Kết nối thiết bị gia đình qua Mã",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Đăng nhập Google (tùy chọn) để đồng bộ đám mây và nhận thông báo từ xa",
+                                fontSize = 11.sp,
+                                color = Color.White.copy(alpha = 0.65f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        GoogleSignInButton(
+                            modifier = Modifier,
+                            accentColor = accentColor,
+                            onAuthSuccess = {
+                                Toast.makeText(context, "Đăng nhập Google thành công!", Toast.LENGTH_SHORT).show()
+                            },
+                            onAuthError = { err ->
+                                Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Family Info Card (Luôn hiển thị: Tạo nhóm & Nhập mã)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF131822)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+            ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -343,7 +384,6 @@ fun FamilyMonitorScreen(
                                 }
                             )
                         }
-                    }
                 }
             }
         }

@@ -1,11 +1,13 @@
 package com.example.ui.screens
 
+import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -267,13 +269,6 @@ fun SettingsScreen(
                         onCheckedChange = { onSettingsChanged(settings.copy(showBatteryStatus = it)) }
                     )
 
-                    SettingToggleRow(
-                        title = "Huy hiệu Thiết bị Gia đình từ xa",
-                        subtitle = "Hiển thị số lượng máy trực tuyến qua tài khoản Gmail",
-                        checked = settings.showFamilyDevicesWidget,
-                        accentColor = accentColor,
-                        onCheckedChange = { onSettingsChanged(settings.copy(showFamilyDevicesWidget = it)) }
-                    )
 
                     SettingToggleRow(
                         title = "Lối tắt Cổng đầu vào TV (HDMI/AV)",
@@ -411,24 +406,48 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Button(
-                        onClick = onOpenFamilyMonitor,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                        modifier = Modifier.fillMaxWidth()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.People,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Mở Trung Tâm Giám Sát Từ Xa",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Button(
+                            onClick = onOpenFamilyMonitor,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.People,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Quản lý / Nhập mã",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val prefs = context.getSharedPreferences("zenith_family_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().clear().apply()
+                                Toast.makeText(context, "Đã rời nhóm và gỡ kết nối gia đình", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Gỡ / Rời nhóm",
+                                color = Color(0xFFFF8A80),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 }
             }
