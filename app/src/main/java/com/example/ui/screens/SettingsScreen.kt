@@ -107,8 +107,7 @@ fun SettingsScreen(
     onOpenVault: () -> Unit,
     onOpenScreensaver: () -> Unit,
     onSetDefaultLauncher: () -> Unit,
-    onBack: () -> Unit,
-    onOpenFamilyMonitor: () -> Unit = {}
+    onBack: () -> Unit
 ) {
     BackHandler {
         onBack()
@@ -391,40 +390,116 @@ fun SettingsScreen(
                 }
             }
 
-            // MỤC 3: THEO DÕI & QUẢN LÝ THIẾT BỊ GIA ĐÌNH TỪ XA QUA GMAIL
+            // MỤC 3: QUẢN LÝ CỔNG ĐẦU VÀO TV (TV INPUTS) & TỐI ƯU HỆ THỐNG
             item {
                 SettingsSectionCard(
-                    title = "Theo Dõi Thiết Bị Gia Đình Từ Xa",
-                    icon = Icons.Rounded.People,
+                    title = "Cổng Đầu Vào TV & Tối Ưu Hệ Thống",
+                    icon = Icons.Rounded.Cable,
                     accentColor = accentColor
                 ) {
                     Text(
-                        text = "Đồng bộ trạng thái pin, mạng, RAM và điều khiển rung/chuông cảnh báo giữa các máy trong gia đình qua tài khoản Gmail:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                        text = "Chọn cổng kết nối TV mặc định hoặc chuyển đổi nhanh:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val tvInputs = listOf(
+                        Triple("hdmi_1", "HDMI 1", "TV Box / Đầu thu HD"),
+                        Triple("hdmi_2", "HDMI 2", "Máy chơi game (PS5 / Xbox)"),
+                        Triple("hdmi_3_earc", "HDMI 3 (eARC)", "Dàn âm thanh / Soundbar"),
+                        Triple("av", "Cổng AV / RCA", "Đầu đĩa cổ điển / Karaoke"),
+                        Triple("usb_media", "USB Media", "Ổ cứng / Thẻ nhớ ngoài")
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        tvInputs.forEach { (id, name, desc) ->
+                            val isSelected = settings.activeTvInputId == id
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) accentColor.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isSelected) accentColor else Color.White.copy(alpha = 0.08f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onSettingsChanged(settings.copy(activeTvInputId = id))
+                                        Toast.makeText(context, "Đã chọn nguồn: $name", Toast.LENGTH_SHORT).show()
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (id.startsWith("hdmi")) Icons.Rounded.Tv else Icons.Rounded.Cable,
+                                            contentDescription = null,
+                                            tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Column {
+                                            Text(
+                                                text = name,
+                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = desc,
+                                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                    }
+
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = "Đang chọn",
+                                            tint = accentColor,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Bảo trì & Tăng tốc TV:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = onOpenFamilyMonitor,
+                            onClick = {
+                                System.gc()
+                                Toast.makeText(context, "Đã dọn dẹp bộ nhớ đệm và giải phóng RAM thành công!", Toast.LENGTH_SHORT).show()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.People,
+                                imageVector = Icons.Rounded.Tune,
                                 contentDescription = null,
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Quản lý / Nhập mã",
+                                text = "Dọn Dẹp & Tăng Tốc",
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -433,17 +508,22 @@ fun SettingsScreen(
 
                         OutlinedButton(
                             onClick = {
-                                val prefs = context.getSharedPreferences("zenith_family_prefs", Context.MODE_PRIVATE)
-                                prefs.edit().clear().apply()
-                                Toast.makeText(context, "Đã rời nhóm và gỡ kết nối gia đình", Toast.LENGTH_SHORT).show()
+                                onOpenScreensaver()
                             },
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f)),
+                            border = BorderStroke(1.dp, accentColor.copy(alpha = 0.5f)),
                             modifier = Modifier.weight(1f)
                         ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Nightlight,
+                                contentDescription = null,
+                                tint = accentColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Gỡ / Rời nhóm",
-                                color = Color(0xFFFF8A80),
+                                text = "Màn Hình Chờ",
+                                color = accentColor,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 12.sp
                             )

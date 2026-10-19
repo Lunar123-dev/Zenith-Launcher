@@ -26,8 +26,7 @@ enum class LauncherScreen {
     APP_DRAWER,
     HIDDEN_VAULT,
     SETTINGS,
-    SCREENSAVER,
-    FAMILY_MONITOR
+    SCREENSAVER
 }
 
 class LauncherViewModel(application: Application) : AndroidViewModel(application) {

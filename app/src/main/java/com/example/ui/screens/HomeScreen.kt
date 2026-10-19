@@ -58,8 +58,16 @@ import androidx.compose.material.icons.rounded.StayCurrentLandscape
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.Usb
 import androidx.compose.material.icons.rounded.SignalWifiOff
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.VolumeOff
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -101,7 +109,6 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.model.AppCategory
 import com.example.data.model.AppInfo
-import com.example.data.model.DeviceRecord
 import com.example.data.model.IconShape
 import com.example.data.model.IconSize
 import com.example.data.model.InfoPlacement
@@ -134,11 +141,6 @@ fun HomeScreen(
     onSetDefaultLauncher: () -> Unit,
     onSaveStickyNote: (String) -> Unit,
     onSwitchWidget: (SmartWidgetType) -> Unit,
-    onOpenFamilyMonitor: () -> Unit = {},
-    familyDevices: List<DeviceRecord> = emptyList(),
-    currentDevice: DeviceRecord? = null,
-    familyName: String = "Gia đình của tôi",
-    userEmail: String? = null,
     tvInputSources: List<TvInputSource> = emptyList(),
     onSelectTvInput: (String) -> Unit = {},
     onSetAppPinned: (AppInfo, Boolean) -> Unit = { _, _ -> },
@@ -185,11 +187,6 @@ fun HomeScreen(
                 onSetDefaultLauncher = onSetDefaultLauncher,
                 onSaveStickyNote = onSaveStickyNote,
                 onSwitchWidget = onSwitchWidget,
-                onOpenFamilyMonitor = onOpenFamilyMonitor,
-                familyDevices = familyDevices,
-                currentDevice = currentDevice,
-                familyName = familyName,
-                userEmail = userEmail,
                 tvInputSources = tvInputSources,
                 onSelectTvInput = onSelectTvInput,
                 onSetAppPinned = onSetAppPinned
@@ -211,11 +208,6 @@ fun HomeScreen(
                 onSetDefaultLauncher = onSetDefaultLauncher,
                 onSaveStickyNote = onSaveStickyNote,
                 onSwitchWidget = onSwitchWidget,
-                onOpenFamilyMonitor = onOpenFamilyMonitor,
-                familyDevices = familyDevices,
-                currentDevice = currentDevice,
-                familyName = familyName,
-                userEmail = userEmail,
                 tvInputSources = tvInputSources,
                 onSelectTvInput = onSelectTvInput,
                 onSetAppPinned = onSetAppPinned
@@ -243,11 +235,6 @@ fun TvLandscapeHomeScreen(
     onSetDefaultLauncher: () -> Unit,
     onSaveStickyNote: (String) -> Unit,
     onSwitchWidget: (SmartWidgetType) -> Unit,
-    onOpenFamilyMonitor: () -> Unit = {},
-    familyDevices: List<DeviceRecord> = emptyList(),
-    currentDevice: DeviceRecord? = null,
-    familyName: String = "Gia đình của tôi",
-    userEmail: String? = null,
     tvInputSources: List<TvInputSource> = emptyList(),
     onSelectTvInput: (String) -> Unit = {},
     onSetAppPinned: (AppInfo, Boolean) -> Unit = { _, _ -> }
@@ -582,35 +569,35 @@ fun TvTopHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(horizontal = 8.dp, vertical = 5.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Bên trái: Tên launcher - Ngày - Giờ - Trạng thái kết nối wifi/bluetooth
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // 1. Tên launcher
+                // 1. Tên launcher (Thu gọn dạng badge icon + tên nhỏ)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(accentColor.copy(alpha = 0.16f))
-                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Tv,
                         contentDescription = "Zenith Launcher",
                         tint = accentColor,
-                        modifier = Modifier.size(15.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Text(
                         text = "Zenith",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            fontSize = 11.sp
                         ),
                         color = accentColor
                     )
@@ -621,7 +608,7 @@ fun TvTopHeader(
                     text = formattedDate,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Medium,
-                        fontSize = 11.sp
+                        fontSize = 10.5.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                 )
@@ -631,21 +618,21 @@ fun TvTopHeader(
                     text = formattedTime,
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.5.sp,
+                        fontSize = 12.5.sp,
                         letterSpacing = (-0.3).sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                // 4. Trạng thái kết nối Wi-Fi & Bluetooth (Chỉ icon thu gọn)
+                // 4. Trạng thái kết nối Wi-Fi & Bluetooth (Chỉ icon thu gọn 22.dp)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     // Icon Wi-Fi
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(22.dp)
                             .clip(CircleShape)
                             .background(if (hasNet) Color(0xFF00E676).copy(alpha = 0.15f) else Color(0xFFFF5252).copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
@@ -654,7 +641,7 @@ fun TvTopHeader(
                             imageVector = if (hasNet) Icons.Rounded.Wifi else Icons.Rounded.SignalWifiOff,
                             contentDescription = if (hasNet) "Wi-Fi kết nối" else "Mất mạng",
                             tint = if (hasNet) Color(0xFF00E676) else Color(0xFFFF5252),
-                            modifier = Modifier.size(13.dp)
+                            modifier = Modifier.size(12.dp)
                         )
                     }
 
@@ -662,7 +649,7 @@ fun TvTopHeader(
                     if (bluetoothOn) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(22.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF2979FF).copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -671,52 +658,40 @@ fun TvTopHeader(
                                 imageVector = Icons.Rounded.Bluetooth,
                                 contentDescription = "Bluetooth đã bật",
                                 tint = Color(0xFF2979FF),
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(12.dp)
                             )
                         }
                     }
                 }
             }
 
-            // Bên phải: Chọn cổng kết nối - Màn hình chờ - Cài đặt chung
+            // Bên phải: Chọn cổng kết nối - Màn hình chờ - Cài đặt chung (Thu gọn hoàn toàn thành các Icon button 30.dp)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // 5. Chọn cổng kết nối (TV Inputs)
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = accentColor.copy(alpha = 0.14f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)),
+                // 5. Chọn cổng kết nối (TV Inputs) - Thu gọn thành icon Cable
+                IconButton(
+                    onClick = onOpenInputPicker,
                     modifier = Modifier
-                        .clickable(onClick = onOpenInputPicker)
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.16f))
                         .testTag("header_tv_inputs_button")
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Cable,
-                            contentDescription = "Chọn cổng kết nối",
-                            tint = accentColor,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = activeTvInput,
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = accentColor
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Cable,
+                        contentDescription = "Chọn cổng kết nối ($activeTvInput)",
+                        tint = accentColor,
+                        modifier = Modifier.size(15.dp)
+                    )
                 }
 
-                // 6. Màn hình chờ (Screensaver)
+                // 6. Màn hình chờ (Screensaver) - Icon Nightlight
                 IconButton(
                     onClick = onOpenScreensaver,
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(30.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .testTag("header_screensaver_button")
@@ -725,15 +700,15 @@ fun TvTopHeader(
                         imageVector = Icons.Rounded.Nightlight,
                         contentDescription = "Màn hình chờ",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
 
-                // 7. Cài đặt chung (Settings)
+                // 7. Cài đặt chung (Settings) - Icon Settings
                 IconButton(
                     onClick = onOpenSettings,
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(30.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .testTag("header_settings_button")
@@ -742,7 +717,7 @@ fun TvTopHeader(
                         imageVector = Icons.Rounded.Settings,
                         contentDescription = "Cài đặt chung",
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
             }
@@ -994,7 +969,7 @@ fun TvPinAppPickerDialog(
 }
 
 /**
- * Dialog Chọn Cổng Đầu Vào TV
+ * Dialog Chọn Cổng Đầu Vào TV & Điều Khiển Nhanh Thiết Bị
  */
 @Composable
 fun TvInputSourceChooserDialog(
@@ -1004,54 +979,262 @@ fun TvInputSourceChooserDialog(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    var selectedTab by remember { mutableStateOf(0) }
+    var tvVolume by remember { mutableStateOf(35f) }
+    var isMuted by remember { mutableStateOf(false) }
+    var selectedSleepTimer by remember { mutableStateOf("Tắt") }
+    var selectedPictureMode by remember { mutableStateOf("Tiêu chuẩn") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(imageVector = Icons.Rounded.Cable, contentDescription = null, tint = accentColor)
-                Text("Chọn Cổng Đầu Vào TV", fontWeight = FontWeight.Bold)
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (selectedTab == 0) Icons.Rounded.Cable else Icons.Rounded.Tune,
+                        contentDescription = null,
+                        tint = accentColor
+                    )
+                    Text(
+                        text = if (selectedTab == 0) "Cổng Đầu Vào TV" else "Điều Khiển Nhanh TV",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.Transparent,
+                    contentColor = accentColor,
+                    divider = {}
+                ) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = { Text("Nguồn TV (Inputs)", fontSize = 12.sp, fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = { Text("Điều Khiển Nhanh", fontSize = 12.sp, fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) }
+                    )
+                }
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                sources.forEach { src ->
-                    val isSelected = src.id == activeInputId
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) accentColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (isSelected) accentColor else Color.Transparent
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(src.id) }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+            if (selectedTab == 0) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    sources.forEach { src ->
+                        val isSelected = src.id == activeInputId
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) accentColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSelected) accentColor else Color.White.copy(alpha = 0.08f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onSelect(src.id)
+                                    android.widget.Toast.makeText(context, "Đã chuyển sang nguồn: ${src.displayLabel}", android.widget.Toast.LENGTH_SHORT).show()
+                                }
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Icon(
-                                    imageVector = when (src.inputType) {
-                                        TvInputType.HDMI -> Icons.Rounded.Tv
-                                        TvInputType.AV -> Icons.Rounded.Cable
-                                        TvInputType.TV_TUNER -> Icons.Rounded.Tv
-                                        TvInputType.USB_MEDIA -> Icons.Rounded.Usb
-                                        else -> Icons.Rounded.Cable
-                                    },
-                                    contentDescription = null,
-                                    tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
-                                )
-                                Column {
-                                    Text(text = src.name, fontWeight = FontWeight.Bold, color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface)
-                                    Text(text = src.customAlias.ifBlank { "Tín hiệu TV" }, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = when (src.inputType) {
+                                            TvInputType.HDMI -> Icons.Rounded.Tv
+                                            TvInputType.AV -> Icons.Rounded.Cable
+                                            TvInputType.TV_TUNER -> Icons.Rounded.Tv
+                                            TvInputType.USB_MEDIA -> Icons.Rounded.Usb
+                                            else -> Icons.Rounded.Cable
+                                        },
+                                        contentDescription = null,
+                                        tint = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Column {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = src.displayLabel,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            if (src.isArc) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFFFB300).copy(alpha = 0.2f)
+                                                ) {
+                                                    Text(
+                                                        text = "eARC",
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFFFFB300),
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Text(
+                                            text = if (src.id.startsWith("hdmi")) "Tín hiệu 4K HDR • 60Hz" else "Cổng kết nối tiêu chuẩn",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                }
+
+                                if (isSelected) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFF00E676))
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = "Đang chọn",
+                                            tint = accentColor,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
+                        }
+                    }
+                }
+            } else {
+                // Tab 2: Điều Khiển Nhanh TV
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // Âm lượng TV
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(
+                                    imageVector = if (isMuted || tvVolume == 0f) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
+                                    contentDescription = null,
+                                    tint = accentColor,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text("Âm lượng TV", fontWeight = FontWeight.SemiBold, fontSize = 12.5.sp)
+                            }
+                            Text(
+                                text = if (isMuted) "Tắt tiếng" else "${tvVolume.toInt()}%",
+                                fontWeight = FontWeight.Bold,
+                                color = accentColor,
+                                fontSize = 12.sp
+                            )
+                        }
 
-                            if (isSelected) {
-                                Icon(imageVector = Icons.Rounded.Check, contentDescription = null, tint = accentColor)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Slider(
+                                value = if (isMuted) 0f else tvVolume,
+                                onValueChange = {
+                                    tvVolume = it
+                                    isMuted = false
+                                },
+                                valueRange = 0f..100f,
+                                modifier = Modifier.weight(1f),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = accentColor,
+                                    activeTrackColor = accentColor
+                                )
+                            )
+                            IconButton(
+                                onClick = { isMuted = !isMuted },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isMuted) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
+                                    contentDescription = "Tắt tiếng",
+                                    tint = if (isMuted) Color(0xFFFF5252) else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Chế độ hình ảnh TV
+                    Column {
+                        Text(
+                            text = "Chế độ hình ảnh:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(listOf("Tiêu chuẩn", "Sống động", "Điện ảnh", "Game TV", "Eco")) { mode ->
+                                val isSel = selectedPictureMode == mode
+                                FilterChip(
+                                    selected = isSel,
+                                    onClick = {
+                                        selectedPictureMode = mode
+                                        android.widget.Toast.makeText(context, "Đã chỉnh chế độ hình ảnh: $mode", android.widget.Toast.LENGTH_SHORT).show()
+                                    },
+                                    label = { Text(mode, fontSize = 11.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = accentColor,
+                                        selectedLabelColor = Color.Black
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    // Hẹn giờ tắt TV (Sleep Timer)
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(imageVector = Icons.Rounded.Timer, contentDescription = null, tint = accentColor, modifier = Modifier.size(15.dp))
+                            Text(
+                                text = "Hẹn giờ ngủ (Sleep Timer):",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(listOf("Tắt", "15 phút", "30 phút", "60 phút", "120 phút")) { timer ->
+                                val isSel = selectedSleepTimer == timer
+                                FilterChip(
+                                    selected = isSel,
+                                    onClick = {
+                                        selectedSleepTimer = timer
+                                        android.widget.Toast.makeText(context, "Hẹn giờ tắt TV: $timer", android.widget.Toast.LENGTH_SHORT).show()
+                                    },
+                                    label = { Text(timer, fontSize = 11.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = accentColor,
+                                        selectedLabelColor = Color.Black
+                                    )
+                                )
                             }
                         }
                     }
@@ -1060,7 +1243,7 @@ fun TvInputSourceChooserDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Đóng", color = accentColor)
+                Text("Đóng", color = accentColor, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -1085,11 +1268,6 @@ fun PortraitHomeScreen(
     onSetDefaultLauncher: () -> Unit,
     onSaveStickyNote: (String) -> Unit,
     onSwitchWidget: (SmartWidgetType) -> Unit,
-    onOpenFamilyMonitor: () -> Unit = {},
-    familyDevices: List<DeviceRecord> = emptyList(),
-    currentDevice: DeviceRecord? = null,
-    familyName: String = "Gia đình của tôi",
-    userEmail: String? = null,
     tvInputSources: List<TvInputSource> = emptyList(),
     onSelectTvInput: (String) -> Unit = {},
     onSetAppPinned: (AppInfo, Boolean) -> Unit = { _, _ -> }
